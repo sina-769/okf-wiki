@@ -1,0 +1,91 @@
+# wiki.toml für ein Wiki über Projektdoku und Code (aus profiles/default.toml, angepasst).
+# Quellen: Rohquellen-Pakete aus einem Git-Repositorium, am Commit gepinnt (capture --commit).
+# Alle Pfade sind relativ zum Ordner dieser Datei.
+
+[wiki]
+title = "Wiki – zuerst lesen"
+bundle = "wiki"
+actor = "claude-code/claude-opus-5-5" # generated.by für neue Seiten; WIKI_ACTOR überschreibt
+okf_version = "0.2"
+requires_core = "0.1"
+
+[paths]
+events = "wiki/.events.jsonl"
+raw = "raw"
+protected = []
+
+[index]
+root = "overview"
+sort = "title"
+entry_tag = "einstieg"                # Lernpfad im Dashboard und Einstiegsseiten im Root-Index
+start_heading = ""                    # Einstiegsseiten direkt unter dem Titel (der sagt schon „zuerst lesen“)
+badges = ["license"]
+
+[log]
+title = "Aktivitätslog"
+
+[enums]
+access = ["fulltext", "abstract", "citation"]
+format = ["documentation", "code"]
+category = ["project", "tool"]
+
+[labels.format]
+documentation = "Dokumentation"
+code = "Code und Konfiguration"
+
+[labels.category]
+project = "Projekt"
+tool = "Werkzeug"
+
+[lint]
+orphans = "inbound"
+fulltext_access = ["fulltext"]
+
+[lint.severity]
+fundweg_missing = "warn"              # jede Quelle sagt, wie sie ins Wiki kam
+
+[dashboard]
+glossary = ["concept", "entity"]
+
+# Reihenfolge der Typen = Reihenfolge der Bereiche im Root-Index.
+[types.synthesis]
+folder = "syntheses"
+label = "Synthesen"
+description = "Querschnitt über mehrere Quellen"
+required = ["title", "description", "status", "generated", "sources"]
+sections = ["Frage", "Kerninsichten", "Verwandte Seiten"]
+needs_footnotes = true
+
+[types.analysis]
+folder = "analyses"
+label = "Analysen"
+description = "Prüfaufträge, die veralten können"
+required = ["title", "description", "status", "generated", "sources", "stale_after"]
+sections = ["Frage", "Kerninsichten", "Verwandte Seiten"]
+needs_footnotes = true
+stale_months = 3
+
+[types.concept]
+folder = "concepts"
+label = "Konzepte"
+description = "Begriffe, Mechanismen und Konventionen"
+required = ["title", "description", "status", "generated", "sources"]
+recommended = ["aliases"]
+needs_footnotes = true
+
+[types.entity]
+folder = "entities"
+label = "Entitäten"
+description = "Projekt und Werkzeuge"
+required = ["title", "description", "status", "generated", "sources"]
+recommended = ["category"]
+subtype = "category"
+needs_footnotes = true
+
+[types.source]
+folder = "sources"
+label = "Quellen"
+description = "Je eine Karte pro Rohquellen-Paket"
+required = ["title", "description", "resource", "access", "status", "generated", "license", "raw_packet"]
+subtype = "format"
+sections = ["Kurzreferat", "Kernaussagen", "Relevanz", "Verbindungen", "Zugang"]

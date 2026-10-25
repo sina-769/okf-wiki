@@ -9,6 +9,7 @@
 ├── hooks/okf_hook.py         Guard und Ereignisprotokoll für Claude Code, nur Standardbibliothek
 ├── hooks/settings.example.json   Hook-Block für .claude/settings.json eines Projekts
 ├── profiles/default.toml     Grundprofil für neue Wikis (okfwiki.py init)
+├── profiles/dokumentation.toml   Profil für Wikis über Projektdoku und Code (init --profile dokumentation)
 ├── profiles/…                weitere fertige wiki.toml je Installation (nicht im Plugin)
 ├── templates/dashboard.html  Vorlage des HTML-Dashboards (okfwiki.py dashboard)
 ├── templates/fonts/          IBM Plex Serif/Sans, JetBrains Mono (SIL OFL 1.1, Lizenztexte dabei), werden eingebettet
@@ -17,11 +18,14 @@
 └── local.md                  optional: Ergänzung je Installation (Projekte, Begleit-Skills), nicht im Plugin
 ```
 
+`profiles/dokumentation.toml` ist für Wikis über Projektdoku und Code gedacht: Quellen mit den Unterarten
+Dokumentation und Code, Lizenz und Rohquellen-Paket als Pflicht, fehlender Fundweg als Warnung.
+
 Aufteilung: Der **Kern** kennt OKF v0.2, das gemeinsame pi-llm-wiki-Profil und alles, was in mehr
 als einem Wiki gebraucht wird (auch Lizenzsuche und Metadatenabruf über offizielle APIs). Alles, was
 sich zwischen Projekten unterscheidet, steht in der **`wiki.toml`** des Projekts. Nur projekteigene
-Register und Korpora bleiben **im Projekt** (qz: `check_citations.py`; Thesis: Korpusfundstellen aus
-`claims.jsonl` als Abschnitt der `CLAUDE.md`).
+Register und Korpora bleiben **im Projekt** (etwa ein Prüfskript für Zitate oder ein Aussagenregister,
+beschrieben in der `CLAUDE.md` des Projekts).
 
 Aufs Netz greift der Kern nur in Befehlen zu, die dafür da sind (`new source --doi/--pmid/--arxiv`:
 Crossref, sonst DataCite, PubMed, arXiv; `lizenz --fetch`: Crossref oder DataCite, Europe PMC,
@@ -38,23 +42,23 @@ uv run --quiet ~/.claude/skills/okf-wiki/okfwiki.py <befehl> …
 Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nimmt `DIR/wiki.toml`,
 `--config PFAD` eine beliebige Datei (Projektordner ist dann ihr Ordner, außer `--root` ist gesetzt).
 
-| Befehl | Zweck | ersetzt |
-|---|---|---|
-| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]`, Vertrauensstufen, letzte Ereignisse; `--hook` gibt SessionStart-JSON aus | TU `status`, TU-SessionStart-Hook |
-| `lint [--strict] [--json] [--summary]` | OKF-Konformität und Profilregeln; Exit 1 bei Fehlern (mit `--strict` auch bei Warnungen) | TU/QZ `lint`, TH `wiki_lint()` |
-| `rebuild [--check] [--quiet]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts | TU `rebuild`, QZ `index`, TH `rebuild_indexes()` |
-| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` | QZ `new`, TH `ensure_page` |
-| `new source <slug>` bzw. `new-source <slug>` mit `--doi` · `--pmid` · `--arxiv` · `--manuell --titel … --url … [--autor] [--jahr] [--csl-typ]`, dazu `[--volltext PFAD --von URL] [--evidenz E]` | Quellenkarte mit Metadaten aus Crossref (DOIs, die Crossref nicht kennt: DataCite), PubMed oder arXiv (CSL, Kurzbeleg, APA-Block); setzt `[sources] checked_field` (`{by: process:crossref, at}`) und bei Rückzug oder Korrektur `[sources] updates_field`; `access` ohne Angabe `citation`, bei `--manuell` `originaldokument`, wenn das Profil ihn kennt | QZ `new-source` |
-| `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt | neu |
-| `capture <slug> --url … --file … [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444) | TU `capture` |
-| `hash <pfad> [--from URL]` (Alias `sha`) | `fulltext`-Block für Karten ohne Rohquellen-Paket | QZ `sha` |
-| `verify <seite> --by human:<id> [--status stable] [--note]` | Prüfvermerk nach OKF §5.2; ändert nur `verified` und `status`, alles andere bleibt byte-genau | TU `verify` |
-| `event <art> <seite> [detail] [--by]` | Ereignis anhängen | TU/QZ `event` |
-| `body <seite> <datei\|->` | Körper ersetzen, Frontmatter byte-genau | QZ `body` |
-| `init [--profile NAME]` | `wiki.toml` aus `profiles/NAME.toml`, Ordner, erstes Ereignis | neu |
-| `rechte [<seite>] [--aktion A] [--json]` (Alias `rights`) | Lizenzen und Nutzungsrechte: Übersicht je Lizenzklasse, eine Quelle im Detail oder alle Quellen nach einem Recht gruppiert (`--aktion abbildung`) | neu |
-| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch und protokolliert | TH `fetch_license` |
-| `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` | neu |
+| Befehl | Zweck |
+|---|---|
+| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]`, Vertrauensstufen, letzte Ereignisse; `--hook` gibt SessionStart-JSON aus |
+| `lint [--strict] [--json] [--summary]` | OKF-Konformität und Profilregeln; Exit 1 bei Fehlern (mit `--strict` auch bei Warnungen) |
+| `rebuild [--check] [--quiet]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts |
+| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
+| `new source <slug>` bzw. `new-source <slug>` mit `--doi` · `--pmid` · `--arxiv` · `--manuell --titel … --url … [--autor] [--jahr] [--csl-typ]`, dazu `[--volltext PFAD --von URL] [--evidenz E]` | Quellenkarte mit Metadaten aus Crossref (DOIs, die Crossref nicht kennt: DataCite), PubMed oder arXiv (CSL, Kurzbeleg, APA-Block); setzt `[sources] checked_field` (`{by: process:crossref, at}`) und bei Rückzug oder Korrektur `[sources] updates_field`; `access` ohne Angabe `citation`, bei `--manuell` `originaldokument`, wenn das Profil ihn kennt |
+| `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt |
+| `capture <slug> --url … --file … [--source-path] [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444) |
+| `hash <pfad> [--from URL]` (Alias `sha`) | `fulltext`-Block für Karten ohne Rohquellen-Paket |
+| `verify <seite> --by human:<id> [--status stable] [--note]` | Prüfvermerk nach OKF §5.2; ändert nur `verified` und `status`, alles andere bleibt byte-genau |
+| `event <art> <seite> [detail] [--by]` | Ereignis anhängen |
+| `body <seite> <datei\|->` | Körper ersetzen, Frontmatter byte-genau |
+| `init [--profile NAME]` | `wiki.toml` aus `profiles/NAME.toml`, Ordner, erstes Ereignis |
+| `rechte [<seite>] [--aktion A] [--json]` (Alias `rights`) | Lizenzen und Nutzungsrechte: Übersicht je Lizenzklasse, eine Quelle im Detail oder alle Quellen nach einem Recht gruppiert (`--aktion abbildung`) |
+| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch und protokolliert |
+| `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` |
 
 ## wiki.toml
 
@@ -104,7 +108,7 @@ priority_field = ""             # z. B. "core": warnt, wenn solche Quellen nur c
 path_not_kebab = "error"
 
 [export.csl]
-path = "quellen/references.json"   # CSL-JSON aller Quellenkarten (id = Slug), byte-gleich zum QZ-Format
+path = "quellen/references.json"   # CSL-JSON aller Quellenkarten (id = Slug)
 field = "csl"                   # Frontmatter-Feld mit dem CSL-Eintrag
 style = "quellen/apa.csl"       # Zitierstil für pandoc (APA-Block in neuen Karten, Literaturverzeichnis)
 lang = "de-DE"
@@ -132,10 +136,10 @@ field = "fundweg"               # Feld für den Fundweg der Quellen
 [sources]                       # new source --doi/--pmid/--arxiv/--manuell
 checked_field = "metadaten_geprueft"   # Metadatenabgleich {by: process:crossref, at} – nicht verified
 updates_field = "crossref_hinweise"    # Crossref updated-by (Rückzug, Korrektur), erscheint auch im Text
-manual_csl_type = "document"    # CSL-Typ bei --manuell ohne --csl-typ (qz: legislation)
+manual_csl_type = "document"    # CSL-Typ bei --manuell ohne --csl-typ (z. B. legislation für Gesetze)
 
 [licenses.patterns]             # weitere Muster (regulärer Ausdruck auf Name oder URL) = Lizenzklasse
-"abda\\.de" = "vorbehalten"
+"example\\.org" = "vorbehalten"
 
 [rights.vorbehalten]            # Rechtematrix je Klasse überschreiben: "ja", "bedingt: …", "nein: …", "fragen: …"
 ki_auswertung = "fragen: Verlag erlaubt kein Text-und-Data-Mining"
@@ -183,7 +187,11 @@ passt); `rights {aktion: "wert: Hinweis"}` für Abweichungen von der Klasse, etw
 Genehmigung; `csl` als CSL-JSON ohne `id`; `fundweg` als Zuordnung oder Liste
 `{art, db, query, von, at, by}` mit `art` ∈ `suche` | `modellvorschlag` | `material` | `person` |
 `zitatverfolgung` (dann `von: <slug>` Pflicht). `db` nennt Datenbank oder Werkzeug (`pubmed`,
-`crossref`, `tooluniverse:PubMed_search_articles`), `query` den exakten Suchstring.
+`crossref`, `tooluniverse:PubMed_search_articles`), `query` den exakten Suchstring. Quellen aus
+Git-Repositorien tragen `pinned {repo, commit}` mit `repo` als `owner/name` und dem vollen Commit-SHA;
+ohne `author` bildet die APA-Angabe daraus den Gruppenautor (der Inhaber aus `repo`, bei `format`
+documentation, code, specification oder dataset). `capture --commit SHA` schreibt den Commit ins
+`manifest.json` des Rohquellen-Pakets; dass er mit `pinned.commit` übereinstimmt, prüft der Kern nicht.
 
 Mit `[scope]` trägt jede Seite das Umfangsfeld (z. B. `umfang: kern`). Quellen dürfen es weglassen,
 dann gilt der engste Umfang der Seiten, die sie verlinken oder in `sources[]` führen. Abgeleitet
@@ -204,7 +212,7 @@ nur die betroffenen Schlüssel bzw. der Körper ändern sich, das Ergebnis wird 
 Eine JSON-Zeile je Ereignis, nur anhängen:
 
 ```json
-{"ts": "2026-10-25T00:01:20Z", "kind": "verify", "page": "concepts/local-tool", "by": "human:jdoe", "detail": ""}
+{"ts": "2026-10-25T09:30:00Z", "kind": "verify", "page": "concepts/local-tool", "by": "human:jdoe", "detail": ""}
 ```
 
 `page` ist die Konzept-ID (Pfad im Bundle ohne `.md`), `raw/<slug>` für Rohquellen, `.` für das ganze
@@ -226,7 +234,7 @@ ableiten lässt); ungültige Werte meldet `enum_invalid`, auch für das Sichtbar
 `visibility_leak` = öffentliche Seite verlinkt eine verborgene oder führt sie in `sources[]`; in der
 öffentlichen Ausgabe wird der Link zu reinem Text, Beleg, Fußnote und Literaturangabe entfallen, der
 übrige Satz bleibt stehen. `fundweg_missing` = Quelle ohne Fundweg
-(Standard info, im qz-Profil warn, mit `--strict` dann Fehler); `fundweg_incomplete` = Suche ohne
+(Standard info, im Profil auch warn, mit `--strict` dann Fehler); `fundweg_incomplete` = Suche ohne
 `db` oder `query`; `fundweg_invalid` = unbekannte Art, Zitatverfolgung ohne `von` oder `von` ohne
 Quellenkarte.
 
@@ -290,7 +298,7 @@ wiki.verify("concepts/iso-9001", by="human:jdoe", status="stable")
 wiki.append_event("enrich", "sources/shaw-2024", "Lizenz aus Crossref")
 ```
 
-Was mehr als ein Wiki braucht (z. B. QZ `new-source --doi`), kommt als Befehl in den Kern
+Was mehr als ein Wiki braucht (z. B. `new-source --doi`), kommt als Befehl in den Kern
 Projektskripte nutzen den Kern nur noch für wirklich projekteigene
 Register und Korpora.
 
@@ -299,7 +307,8 @@ Register und Korpora.
 `okfwiki.py dashboard` schreibt eine eigenständige HTML-Datei zum **inhaltlichen Erkunden** des Wikis:
 Daten als JSON eingebettet, Layout und Bedienung in reinem JavaScript, keine Bibliotheken aus dem Netz,
 in unter einer Sekunde erzeugt. Technische Angaben (Lint-Befunde, Prüfstatus, Dateipfade) stehen bewusst
-nicht darin; dafür gibt es `lint` und `status`. Was die Seiten selbst als offen markieren, zeigt die
+nicht darin; dafür gibt es `lint` und `status`. Zeitangaben (Stand, Fundweg) stehen nur als Datum darin,
+auch in den eingebetteten Daten, keine Uhrzeiten. Was die Seiten selbst als offen markieren, zeigt die
 Übersicht „Offene Stellen“ (`[!todo]` dort eingeklappt). Mermaid ist bewusst nicht eingebettet (mehrere MB
 je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`-Block.
 
@@ -309,7 +318,7 @@ je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`
   Quelle“ = nur über `sources[]`). Layout nach Fruchterman-Reingold mit schwachem Zug zum Typ-Anker,
   deterministisch (Startwerte aus der Konzept-ID), ohne Überlappung; das größte Netz links, Inseln
   daneben, Seiten ohne Verbindung als Raster darunter. Runde Knoten, Größe = eingehende Verbindungen;
-  bewusst klein (seit 25.10.2026 etwa halb so groß wie vorher, Trefferfläche größer als der Punkt).
+  bewusst klein (Trefferfläche größer als der Punkt).
 - **Vorschau und Karte:** Zeigen öffnet eine kurze Vorschau (Art, Unterart, Titel,
   Kurzbeleg, Beschreibung, erster Absatz, Abschnitte). Ein Klick heftet eine Karte mit der ganzen Seite
   an, zum Scrollen: Text mit APA-Belegen, Literatur, Verknüpfungen; Links öffnen die Zielseite in
@@ -337,7 +346,7 @@ je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`
   Quellen, Entitäten, Konzepte, Synthesen, Analysen, danach weitere Profiltypen in der Reihenfolge der
   `wiki.toml`; Typen außerhalb des Profils neben dem Typ ihres Ordners. Die Reihenfolge der `[types.*]`
   in der `wiki.toml` gilt im Dashboard nur noch für das Layout des Netzwerkgraphen (und weiter für den Root-Index).
-- **Bewusst entfernt (25.10.2026, Wunsch der Person; nicht wieder einführen):** Themenbereiche und
+- **Bewusst nicht enthalten (nicht wieder einführen):** Themenbereiche und
   Schlagwörter erscheinen nirgends (keine Kachel, keine Tabellenspalte, nicht unter „Kategorie“ oder „Farbe“,
   keine Angaben oder Übersichtsseiten an der Seite), keine Übersichtskästen unter dem Graphen, keine
   Kacheln „Verbindungen“ und „Quellenlage“.
@@ -419,8 +428,8 @@ qm = "Qualitätsmanagement"
   Formatiert wird mit pandoc `--citeproc` und dem Stil aus `[export.csl] style`, sonst
   `templates/apa.csl` (Zotero „APA Style 7th edition“), Sprache `[export.csl] lang` (de-DE): ein Aufruf
   für alle Quellen, rund 0,4 s für 54 Quellen. Ohne pandoc gibt es eine einfache Ersatzform.
-  CSL je Quellenkarte: der `csl`-Block (qz); sonst aus flachen Feldern `authors`, `year`, `container`,
-  `volume`, `issue`, `pages`, `doi` (thesis-wiki, Autorenlisten „Nachname“, „V. M.“ werden gepaart);
+  CSL je Quellenkarte: der `csl`-Block; sonst aus flachen Feldern `authors`, `year`, `container`,
+  `volume`, `issue`, `pages`, `doi` (Autorenlisten „Nachname“, „V. M.“ werden gepaart);
   sonst aus `title`, `resource`, `author` (Pull Requests), Repo-Inhaber aus `pinned.repo` als
   Gruppenautor, `created` als Datum und `retrieved_at` des Rohquellen-Manifests als Abrufdatum.
   Die APA-Angabe ist nur so gut wie diese Daten (fehlende Daten ergeben „o. J.“, gleiche Autor:innen
@@ -437,7 +446,8 @@ Gestaltung: Alabaster-Grund #F4F3ED,
 weiße Karten mit 14 px Radius, Charcoal #1A1A1A, Akzent Gelb #FCE53A (dunkel: Blau #3a5efc),
 Überschriften IBM Plex Serif, Text IBM Plex Sans, Code und Metadaten JetBrains Mono; der Artikeltext
 übernimmt `.prose-content`. Die Schriften liegen in `templates/fonts/` und werden eingebettet
-(etwa 400 KB je Dashboard), damit die Datei auch ohne Netz gleich aussieht.
+(etwa 400 KB je Dashboard), damit die Datei auch ohne Netz gleich aussieht; ein CSS-Kommentar davor nennt
+Copyright und Lizenz.
 
 Farben: Nach Art haben die vier gemeinsamen Typen in jedem Wiki dieselbe Farbe (Quelle blau,
 Konzept grün, Entität gelb, Synthese magenta), alle Knoten sind rund; Entitäten erscheinen als Ring,

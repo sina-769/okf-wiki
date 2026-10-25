@@ -6,5 +6,6 @@
     "name": "sina-769",
     "url": "https://github.com/sina-769"
   },
+  "license": "MIT",
   "keywords": ["wiki", "knowledge-base", "okf", "open-knowledge-format", "llm-wiki", "citations", "provenance", "dashboard"]
 }

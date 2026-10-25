@@ -178,7 +178,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pages td .d { color: var(--muted); font-size: 12px; }
 footer { color: var(--muted); font-size: 12px; margin: 16px 0 8px; }
 
-/* Leseansicht (Aufbau wie ein Blogartikel der Website) */
+/* Leseansicht (Aufbau wie ein Blogartikel) */
 body.reading { overflow: hidden; }
 .reader { position: fixed; inset: 0; z-index: 20; background: var(--page); overflow-y: auto; padding: 16px; }
 .reader[hidden] { display: none; }
@@ -490,7 +490,7 @@ details.sub .open-list { padding-left: 18px; }
 
   // ---------------------------------------------------------------- Farben (Art oder Umfang)
   // Vier validierte Farben; die Unterscheidung trägt zusätzlich die Form (Entitäten als Ring) bzw. die Legende.
-  // Themenbereiche und Schlagwörter zeigt das Dashboard nirgends (Wunsch der Person, alle Wikis).
+  // Themenbereiche und Schlagwörter zeigt das Dashboard nirgends (bewusst, in allen Wikis).
   const TYPE_SLOT = { source: 1, concept: 2, entity: 3, synthesis: 4 };
   // Umfang nur anbieten, wenn Seiten ihn tragen; eine Voreinstellung ohne Treffer gilt als „alle“
   const SC = D.scope && D.scope.values.length && nodes.some(n => n.scope) ? D.scope : null;
@@ -527,7 +527,12 @@ details.sub .open-list { padding-left: 18px; }
   const typeDot = t => dotSvg(TYPE_SLOT[t] ? { color: `var(--c${TYPE_SLOT[t]})`, ring: t === "entity" } : { color: "var(--c-other)", ring: true });
 
   // ---------------------------------------------------------------- Kopf und Überblick
-  const day = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }); };
+  // Daten kommen als JJJJ-MM-TT; als Kalendertag lesen, sonst zeigt ein Browser westlich von UTC den Vortag
+  const day = iso => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+  };
   $("title").replaceChildren(h("span", { class: "hl" }, D.title));
   const internalCount = VIS ? count(n => n.internal) : 0;
   $("subtitle").textContent = `${nodes.length} Seiten` + (internalCount ? `, davon ${internalCount} nicht öffentlich` : "") + ` · Stand ${day(D.generated)}`;
@@ -535,7 +540,7 @@ details.sub .open-list { padding-left: 18px; }
   const tiles = [
     ["Seiten", nodes.length, typeOrder.map(t => `${tlabel(t)} ${count(n => n.type === t)}`).join(" · ")],
   ];
-  // keine Kacheln für Verbindungen, Quellenlage, Themenbereiche oder Schlagwörter (Wunsch der Person, alle Wikis)
+  // keine Kacheln für Verbindungen, Quellenlage, Themenbereiche oder Schlagwörter (bewusst, in allen Wikis)
   const FW = D.fundweg_arten || {};
   const fwNodes = nodes.filter(n => n.fundweg && n.fundweg.length);
   if (fwNodes.length) {

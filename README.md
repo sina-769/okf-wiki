@@ -15,8 +15,31 @@ Belegpflicht für jede Sachaussage und ein HTML-Dashboard zum Lesen und Lernen.
   `wiki.toml`.
 - **Dashboard**: eine einzelne HTML-Datei ohne Nachladen aus dem Netz (Netzgraph, Lernpfad, Glossar,
   offene Stellen, Leseansicht mit Belegen und Literatur nach APA 7).
+- **Quellen**: Das Plugin nimmt Quellen auf und belegt sie, enthält aber keine Literatursuche;
+  Metadaten kommen per DOI, PMID oder arXiv-ID (`new source --doi`, `--pmid`, `--arxiv`).
 
 Die Texte von Skill und Dokumentation sind deutsch.
+
+## Dashboard
+
+Startansicht mit Kennzahlen, dem Lernpfad in acht Schritten und dem Netzwerkgraphen aller Seiten:
+
+![Dashboard in heller Darstellung: Titel, Kennzahlen zu Seiten, Fundweg und Lizenz, der Lernpfad mit acht Schritten und darunter der Netzwerkgraph mit der Seitenleiste „Erkunden“](docs/dashboard-lernpfad.png)
+
+Schichtengraph in dunkler Darstellung, von den Quellen bis zu den Analysen, mit den Verbindungen als Fäden:
+
+![Schichtengraph in dunkler Darstellung: fünf Spalten Quellen, Entitäten, Konzepte, Synthesen und Analysen, dazwischen die Verbindungsfäden](docs/dashboard-schichtengraph.png)
+
+Zeigen öffnet eine Vorschau der Seite und hebt ihre Verbindungen hervor, ein Klick heftet die ganze Seite als Karte an:
+
+![Schichtengraph in dunkler Darstellung, alphabetisch sortiert: Zum Konzept „Lokales Tool“ ist die Vorschaukarte offen mit Art, Titel, Beschreibung, erstem Absatz, Abschnitten und Zahl der Verbindungen; die verbundenen Seiten in den Nachbarspalten und ihre Fäden sind hervorgehoben, alle anderen abgeblendet](docs/dashboard-vorschau.png)
+
+Quellenkarte in der Leseansicht mit Nutzungsrechten, APA-Angabe zum Kopieren und RIS-Export:
+
+![Leseansicht einer Quellenkarte: Abschnitte Zugang und Fundweg, die aufgeklappte Tabelle „Lizenz und Nutzungsrechte“, darunter die APA-Angabe mit den Knöpfen „Kopieren“ und „RIS herunterladen“](docs/dashboard-quellenkarte.png)
+
+Beispiel-Wiki „ToolUniverse beitragen“, aufgebaut aus Dokumentation und Code von
+[mims-harvard/ToolUniverse](https://github.com/mims-harvard/ToolUniverse) (Apache-2.0).
 
 ## Voraussetzungen
 
@@ -24,7 +47,7 @@ Die Texte von Skill und Dokumentation sind deutsch.
 |---|---|---|
 | [Claude Code](https://code.claude.com/docs) | 2.1.291 | Plugin, Skill, Hooks |
 | [uv](https://docs.astral.sh/uv/) | 0.12.7 | startet Kern und Hooks; holt Python ≥ 3.11 und die Pakete aus dem Skriptkopf (PEP 723) |
-| Python | ≥ 3.11, von uv geholt, falls keins da ist | — |
+| Python | ≥ 3.11 (im Test 3.14.7, von uv geholt) | Kern und Hooks; der Kern setzt uv voraus, uv holt ein passendes Python selbst, falls keins da ist |
 | PyYAML ≥ 6.0, Markdown ≥ 3.5 | von uv beim ersten Start geholt | Frontmatter, Leseansicht |
 
 Netz braucht der Kern beim ersten Start (PyPI, ggf. Python-Download durch uv) und sonst nur in Befehlen,
@@ -58,6 +81,9 @@ uv run --quiet "$OKF" rebuild && uv run --quiet "$OKF" lint
 uv run --quiet "$OKF" dashboard                     # build/wiki-dashboard.html
 ```
 
+Für ein Wiki über Projektdoku und Code gibt es `init --profile dokumentation`: Quellen mit den Unterarten
+Dokumentation und Code, Lizenz als Pflicht, fehlender Fundweg als Warnung.
+
 Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. Alle Befehle und
 `wiki.toml`-Schlüssel: [skills/okf-wiki/docs/konfiguration.md](skills/okf-wiki/docs/konfiguration.md).
 
@@ -79,5 +105,5 @@ Letztes Protokoll: [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md
 
 ## Lizenz und Dank
 
-Lizenz dieses Plugins: noch offen, wird vor der Veröffentlichung gewählt. Fremde Bestandteile und
-Vorbilder mit ihren Lizenzen: [NOTICE.md](NOTICE.md).
+okf-wiki steht unter der [MIT-Lizenz](LICENSE). Ausgenommen sind die mitgelieferten Schriften und der
+Zitierstil mit eigener Lizenz; sie und die Vorbilder nennt [NOTICE.md](NOTICE.md).

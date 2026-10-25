@@ -102,7 +102,7 @@ DEFAULT_CONFIG = {
                   "glossary": ["concept", "entity"]},   # Typen, deren Seiten ins Glossar kommen
     "taxonomy": {"field": "domain", "label": "Themenbereich"},
     "labels": {},
-    "licenses": {"patterns": {}},     # weitere Muster: {"abda.de" = "vorbehalten"}
+    "licenses": {"patterns": {}},     # weitere Muster: {"example.org" = "vorbehalten"}
     "rights": {},                     # Matrix überschreiben: [rights.vorbehalten] abbildung = "nein: …"
     "scope": {"field": "", "label": "Umfang", "default": "", "derive": True},
     # Seiten mit einem Wert aus hidden fehlen in der öffentlichen Ausgabe (dashboard --oeffentlich) ganz
@@ -376,7 +376,7 @@ LOCATOR_RE = re.compile(
 
 
 def csl_names(raw) -> list[dict]:
-    """Autorenliste aus Strings: "Nachname, V." oder abwechselnd "Nachname", "V. M." (thesis-wiki-Bootstrap)."""
+    """Autorenliste aus Strings: "Nachname, V." oder abwechselnd "Nachname", "V. M."."""
     items = [one_line(a).strip(",; ") for a in as_list(raw) if one_line(a).strip(",; ")]
     out, i = [], 0
     while i < len(items):
@@ -473,7 +473,7 @@ def today_parts() -> dict:
 
 
 def crossref_csl(m: dict) -> dict:
-    """CSL-JSON ohne id aus der Crossref-Antwort `message` (wie qz lookup.py to_csl)."""
+    """CSL-JSON ohne id aus der Crossref-Antwort `message`."""
     def year(key):
         return ((m.get(key) or {}).get("date-parts") or [[None]])[0][0]
     y = year("published-print") or year("issued")
@@ -1838,7 +1838,8 @@ class Wiki:
                     text = catalog[key]["cite"]
                     loc = LOCATOR_RE.search(notes.get(i, ""))
                     if loc:
-                        text += ", " + html.escape(loc.group(0))
+                        # Satzpunkt am Ende der Fußnote („Zeile 41–54.“) gehört nicht zur Fundstelle
+                        text += ", " + html.escape(re.sub(r"(?<=\d)\.$", "", loc.group(0)))
                     tip = html.escape(notes.get(i, ""), quote=True)
                     parts.append(f'<a class="cite-ref" href="#lit-{key}"' + (f' title="{tip}"' if tip else "") + f">{text}</a>")
                 cites.append('<span class="cite">(' + "; ".join(parts) + ")</span>")
@@ -1998,7 +1999,9 @@ class Wiki:
                 "license": self.license_of(p) if is_source else None,
                 "rights": [[a, *rights[a]] for a in RIGHTS_ACTIONS] if is_source else [],
                 "stored": self.fulltext_locations(p) if is_source else [],
-                "fundweg": self.fundweg_of(p) if is_source else [],
+                # Fundweg-Zeitpunkt nur als Datum: das Dashboard zeigt Tage, keine Uhrzeiten
+                "fundweg": [{**f, "at": str(f["at"])[:10]} if f.get("at") else f for f in self.fundweg_of(p)]
+                           if is_source else [],
                 "scope": scopes.get(p.id, ("", False))[0], "scope_derived": scopes.get(p.id, ("", False))[1],
                 "id": p.id, "title": p.title, "type": p.type or "?", "description": p.description,
                 "access": str(fm.get("access") or "") if p.id in sources else "",
@@ -2026,7 +2029,7 @@ class Wiki:
                       if f != vis_field and isinstance(m, dict)}
             scope_values = [v for v in scope_values if any(s == v for s, _ in scopes.values())]
         return {
-            "title": self.dashboard_title(), "generated": now_iso(), "version": VERSION,
+            "title": self.dashboard_title(), "generated": now_iso()[:10], "version": VERSION,
             "types": [{"name": n, "label": spec["label"], "folder": spec["folder"]} for n, spec in types.items()],
             "domain_label": self.cfg["taxonomy"].get("label", "Themenbereich"),
             "labels": labels,
@@ -2433,18 +2436,35 @@ def page_preview(rendered: str, description: str = "", limit: int = 320) -> tupl
 
 
 def embedded_fonts() -> str:
-    """@font-face-Regeln mit eingebetteten Schriften aus templates/fonts/ (SIL OFL 1.1, siehe README dort)."""
+    """@font-face-Regeln mit eingebetteten Schriften aus templates/fonts/ (SIL OFL 1.1, siehe README dort).
+
+    Davor steht ein CSS-Kommentar mit Copyright-Vermerk und Lizenzhinweis (Name, Link) im Klartext; in den
+    base64-Daten wären sie für Lesende nicht zu sehen. Eine Schrift ohne ihren Lizenztext wird nicht eingebettet."""
     import base64
-    faces = [("IBM Plex Serif", 400, "ibmplexserif-regular.woff2"), ("IBM Plex Sans", 400, "ibmplexsans-regular.woff2"),
-             ("IBM Plex Sans", 600, "ibmplexsans-semibold.woff2"), ("JetBrains Mono", 400, "jetbrainsmono-regular.woff2")]
-    rules = []
-    for family, weight, name in faces:
-        font = SKILL_DIR / "templates" / "fonts" / name
-        if font.is_file():
-            data = base64.b64encode(font.read_bytes()).decode("ascii")
-            rules.append(f"@font-face {{ font-family: '{family}'; font-style: normal; font-weight: {weight}; "
-                         f"font-display: swap; src: url(data:font/woff2;base64,{data}) format('woff2'); }}")
-    return "\n".join(rules)
+    fonts = SKILL_DIR / "templates" / "fonts"
+    faces = [("IBM Plex Serif", 400, "ibmplexserif-regular.woff2", "OFL-IBM-Plex.txt"),
+             ("IBM Plex Sans", 400, "ibmplexsans-regular.woff2", "OFL-IBM-Plex.txt"),
+             ("IBM Plex Sans", 600, "ibmplexsans-semibold.woff2", "OFL-IBM-Plex.txt"),
+             ("JetBrains Mono", 400, "jetbrainsmono-regular.woff2", "OFL-JetBrains-Mono.txt")]
+    rules, notices = [], {}
+    for family, weight, name, license_file in faces:
+        font, license_text = fonts / name, fonts / license_file
+        # Erste Zeile des Lizenztexts = Copyright-Vermerk des Rechteinhabers; ohne ihn keine Einbettung
+        lines = license_text.read_text(encoding="utf-8").splitlines() if license_text.is_file() else []
+        notice = lines[0].strip().replace("*/", "* /") if lines else ""
+        if not (font.is_file() and notice):
+            continue
+        if family not in notices.setdefault(notice, []):
+            notices[notice].append(family)
+        data = base64.b64encode(font.read_bytes()).decode("ascii")
+        rules.append(f"@font-face {{ font-family: '{family}'; font-style: normal; font-weight: {weight}; "
+                     f"font-display: swap; src: url(data:font/woff2;base64,{data}) format('woff2'); }}")
+    if not rules:
+        return ""
+    lines = [f"   {', '.join(families)}: {notice}" for notice, families in notices.items()]
+    comment = ("/* Eingebettete Schriften, unverändert:\n" + "\n".join(lines)
+               + "\n   Lizenz: SIL Open Font License 1.1, https://openfontlicense.org */")
+    return "\n".join([comment, *rules])
 
 
 def protected_paths(wiki: Wiki) -> list[str]:

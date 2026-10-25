@@ -8,8 +8,14 @@
 | JetBrains Mono Regular | `skills/okf-wiki/templates/fonts/jetbrainsmono-regular.woff2` | https://github.com/JetBrains/JetBrainsMono, Copyright 2020 The JetBrains Mono Project Authors | SIL Open Font License 1.1 (`OFL-JetBrains-Mono.txt`) |
 | CSL-Stil „APA Style 7th edition“ | `skills/okf-wiki/templates/apa.csl` | citation-style-language/styles @ 3c6698d791a83016d699f50cbbea857f6ee3d2f8, unverändert; Autorinnen und Autoren im Stil unter `<author>`/`<contributor>` | CC BY-SA 3.0 (im Stil unter `<rights>`) |
 
-Die Schriften werden unverändert weitergegeben und von `okfwiki.py dashboard` in die erzeugte HTML-Datei
-eingebettet, was die OFL erlaubt. Einzelheiten: `skills/okf-wiki/templates/fonts/README.md`.
+Die Schriften werden unverändert weitergegeben (bytegleich mit den Dateien der Rechteinhaber, nur die
+Dateinamen kleingeschrieben) und von `okfwiki.py dashboard` in die erzeugte HTML-Datei eingebettet, mit
+Copyright-Vermerk und Lizenzhinweis als Kommentar davor; beides erlaubt die OFL. Einzelheiten:
+`skills/okf-wiki/templates/fonts/README.md`.
+
+Marken: IBM Plex® ist eine Marke der IBM Corp., JetBrains Mono eine Marke der JetBrains s.r.o. (so vermerkt
+in den Schriftdateien). Die Namen stehen hier nur, um die Schriften zu bezeichnen; die OFL räumt keine
+Markenrechte ein.
 
 ## Zur Laufzeit geholt (nicht mitgeliefert)
 
