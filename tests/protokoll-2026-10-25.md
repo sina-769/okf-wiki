@@ -7,11 +7,11 @@
 
 Wie der Lauf entstand:
 
-- Getestet wurde Commit `01920d4` dieses Repos, geklont von GitHub (sina-769/okf-wiki, damals privat).
+- Getestet wurde Commit `c9aac9a` dieses Repos, geklont von GitHub (sina-769/okf-wiki).
 - Umgebung: frischer Container `node:22-bookworm-slim` (Digest im Dockerfile) mit git, curl,
   Claude Code 2.1.291 (npm) und uv 0.12.7, Benutzer ohne `~/.claude`, ohne Python, ohne Login.
   OrbStack auf macOS (aarch64), Container mit `--cap-drop ALL`, `--security-opt no-new-privileges`,
-  2 CPU, 2 GB.
+  ohne CPU- und Speichergrenze.
 - Aufruf, aus der Wurzel eines Klons:
 
   ```bash
@@ -33,13 +33,13 @@ Wie der Lauf entstand:
 ---
 
 
-Beginn: 2026-10-25T10:32:04Z · Marketplace-Quelle: `/home/tester/checkout` · Repo-Commit: `01920d461c64b567779358e2339545db810335e2`
+Beginn: 2026-10-25T18:53:30Z · Marketplace-Quelle: `/home/tester/checkout` · Repo-Commit: `c9aac9aec93451be4fafba4c5a2a3e60d6a1f42c`
 
 ## Umgebung
 
 ### 1. Werkzeuge und leere Ausgangslage
 
-`10:32:04Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ 
@@ -62,7 +62,7 @@ kein Skill-Ordner okf-wiki
 
 ### 2. Marketplace hinzufügen
 
-`10:32:04Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ claude plugin marketplace add '/home/tester/checkout'
@@ -71,7 +71,7 @@ Adding marketplace…✔ Successfully added marketplace: okf-wiki (declared in u
 
 ### 3. Plugin installieren
 
-`10:32:04Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ claude plugin install okf-wiki@okf-wiki
@@ -80,7 +80,7 @@ Installing plugin "okf-wiki@okf-wiki"...✔ Successfully installed plugin: okf-w
 
 ### 4. Bestandteile des installierten Plugins
 
-`10:32:04Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ claude plugin details okf-wiki@okf-wiki | sed -n '1,12p'
@@ -100,15 +100,20 @@ Projected token cost
 
 ### 5. Installierte Dateien (Plugin-Cache)
 
-`10:32:04Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ test -n '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0' && cd '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0' && find . -type f | sort && cat .claude-plugin/plugin.json
 ./.claude-plugin/marketplace.json
 ./.claude-plugin/plugin.json
 ./.gitignore
+./LICENSE
 ./NOTICE.md
 ./README.md
+./docs/dashboard-lernpfad.png
+./docs/dashboard-quellenkarte.png
+./docs/dashboard-schichtengraph.png
+./docs/dashboard-vorschau.png
 ./hooks/hooks.json
 ./skills/okf-wiki/SKILL.md
 ./skills/okf-wiki/docs/konfiguration.md
@@ -116,6 +121,7 @@ $ test -n '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0' && cd '/h
 ./skills/okf-wiki/hooks/settings.example.json
 ./skills/okf-wiki/okfwiki.py
 ./skills/okf-wiki/profiles/default.toml
+./skills/okf-wiki/profiles/dokumentation.toml
 ./skills/okf-wiki/templates/apa.csl
 ./skills/okf-wiki/templates/dashboard.html
 ./skills/okf-wiki/templates/fonts/OFL-IBM-Plex.txt
@@ -137,13 +143,13 @@ $ test -n '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0' && cd '/h
     "name": "sina-769",
     "url": "https://github.com/sina-769"
   },
-  "keywords": ["wiki", "knowledge-base", "okf", "open-knowledge-format", "llm-wiki", "citations", "provenance", "dashboard"]
-}
+  "license": "MIT",
+… (gekürzt)
 ```
 
 ### 6. Manifest streng prüfen
 
-`10:32:05Z` · Exit 0 · bestanden
+`18:53:30Z` · Exit 0 · bestanden
 
 ```text
 $ claude plugin validate --strict '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/.claude-plugin/plugin.json'
@@ -156,7 +162,7 @@ Validating plugin manifest: /home/tester/.claude/plugins/cache/okf-wiki/okf-wiki
 
 ### 7. Kern starten (uv holt Python ≥ 3.11, PyYAML, Markdown)
 
-`10:32:08Z` · Exit 0 · bestanden
+`18:53:34Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' --version
@@ -165,7 +171,7 @@ okf-wiki 0.1.0
 
 ### 8. Python, das uv dafür nutzt
 
-`10:32:09Z` · Exit 0 · bestanden
+`18:53:35Z` · Exit 0 · bestanden
 
 ```text
 $ uv python find && uv python list --only-installed
@@ -175,7 +181,7 @@ cpython-3.14.7-linux-aarch64-gnu    /home/tester/.local/share/uv/python/cpython-
 
 ### 9. Wiki anlegen (Profil default)
 
-`10:32:09Z` · Exit 0 · bestanden
+`18:53:35Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' init --profile default && ls -a && cat wiki/.events.jsonl
@@ -184,12 +190,12 @@ angelegt: wiki.toml, Bundle wiki/ – Titel und Typen in wiki.toml anpassen
 ..
 wiki
 wiki.toml
-{"ts": "2026-10-25T10:32:09Z", "kind": "init", "page": ".", "by": "claude-code/claude-opus-5-5", "detail": "Bundle angelegt (Profil default, okf-wiki 0.1.0)"}
+{"ts": "2026-10-25T18:53:35Z", "kind": "init", "page": ".", "by": "claude-code/claude-opus-5-5", "detail": "Bundle angelegt (Profil default, okf-wiki 0.1.0)"}
 ```
 
 ### 10. OKF-v0.2-Spezifikation über die GitHub-API holen (Apache-2.0)
 
-`10:32:09Z` · Exit 0 · bestanden
+`18:53:35Z` · Exit 0 · bestanden
 
 ```text
 $ curl -sf -H 'Accept: application/vnd.github.raw' 'https://api.github.com/repos/GoogleCloudPlatform/knowledge-catalog/contents/okf/SPEC.md?ref=a8291a1a656669b8766fd4ff0f985505fb955e94' -o '$WORK/downloads/SPEC.md' && sha_ok 26aa5da029278939f914e578107242d9607d4f2dc5fe153272b82f9ed1030101 '$WORK/downloads/SPEC.md'
@@ -198,7 +204,7 @@ $WORK/downloads/SPEC.md: SHA-256 26aa5da029278939f914e578107242d9607d4f2dc5fe153
 
 ### 11. README von pi-llm-wiki über die GitHub-API holen (MIT)
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ curl -sf -H 'Accept: application/vnd.github.raw' 'https://api.github.com/repos/zosmaai/pi-llm-wiki/contents/README.md?ref=46bd677041ba01f0298e5afc22e6a8b592f5f835' -o '$WORK/downloads/README.md' && sha_ok cac7184ae31a6bd881e5362326200c899f8d58487134d28e1f11d5f0bc4466c8 '$WORK/downloads/README.md'
@@ -207,7 +213,7 @@ $WORK/downloads/README.md: SHA-256 cac7184ae31a6bd881e5362326200c899f8d58487134d
 
 ### 12. Quelle erfassen: okf-v0-2-spec
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' capture okf-v0-2-spec   --url 'https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/a8291a1a656669b8766fd4ff0f985505fb955e94/okf/SPEC.md' --file '$WORK/downloads/SPEC.md' --commit a8291a1a656669b8766fd4ff0f985505fb955e94   --license Apache-2.0 --license-url https://www.apache.org/licenses/LICENSE-2.0 --note 'OKF v0.2, Spezifikation'   && cat raw/okf-v0-2-spec/manifest.json
@@ -215,7 +221,7 @@ erfasst: raw/okf-v0-2-spec (1 Datei(en))
 {
   "id": "okf-v0-2-spec",
   "url": "https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/a8291a1a656669b8766fd4ff0f985505fb955e94/okf/SPEC.md",
-  "retrieved_at": "2026-10-25T10:32:10Z",
+  "retrieved_at": "2026-10-25T18:53:36Z",
   "retrieved_by": "claude-code/claude-opus-5-5",
   "commit": "a8291a1a656669b8766fd4ff0f985505fb955e94",
   "license": {
@@ -236,18 +242,18 @@ erfasst: raw/okf-v0-2-spec (1 Datei(en))
 
 ### 13. Quelle erfassen: pi-llm-wiki
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' capture pi-llm-wiki   --url 'https://github.com/zosmaai/pi-llm-wiki/blob/46bd677041ba01f0298e5afc22e6a8b592f5f835/README.md' --file '$WORK/downloads/README.md' --commit 46bd677041ba01f0298e5afc22e6a8b592f5f835   --license MIT --license-url 'https://github.com/zosmaai/pi-llm-wiki/blob/46bd677041ba01f0298e5afc22e6a8b592f5f835/LICENSE' --note 'pi-llm-wiki, README'   && ls -l raw/pi-llm-wiki/original
 erfasst: raw/pi-llm-wiki (1 Datei(en))
 total 32
--r--r--r-- 1 tester tester 28856 Oct 25 10:32 README.md
+-r--r--r-- 1 tester tester 28856 Oct 25 18:53 README.md
 ```
 
 ### 14. Quellenkarte anlegen: okf-v0-2-spec
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' new source okf-v0-2-spec   --title 'Open Knowledge Format (OKF), Version 0.2'   --description 'Spezifikation eines Formats für Wissensbündel aus Markdown-Dateien mit YAML-Frontmatter.'   --access fulltext --resource 'https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/a8291a1a656669b8766fd4ff0f985505fb955e94/okf/SPEC.md'   --set raw_packet=raw/okf-v0-2-spec --set format=specification --set date=2026-10-24 --fundweg person   --set 'license={name: Apache-2.0, url: "https://www.apache.org/licenses/LICENSE-2.0"}'
@@ -256,7 +262,7 @@ angelegt: wiki/sources/okf-v0-2-spec.md
 
 ### 15. Quellenkarte anlegen: pi-llm-wiki
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' new source pi-llm-wiki   --title 'pi-llm-wiki (README)'   --description 'Erweiterung und MCP-Server für ein selbstgepflegtes LLM-Wiki nach dem Muster von Andrej Karpathy.'   --access fulltext --resource 'https://github.com/zosmaai/pi-llm-wiki/blob/46bd677041ba01f0298e5afc22e6a8b592f5f835/README.md'   --set raw_packet=raw/pi-llm-wiki --set format=documentation --set date=2026-10-09 --fundweg person   --set 'license={name: MIT, url: "https://github.com/zosmaai/pi-llm-wiki/blob/46bd677041ba01f0298e5afc22e6a8b592f5f835/LICENSE"}'
@@ -265,7 +271,7 @@ angelegt: wiki/sources/pi-llm-wiki.md
 
 ### 16. Konzeptkarte anlegen, die beide Quellen nutzt
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' new concept llm-wiki-im-okf   --title 'LLM-Wiki im Open Knowledge Format'   --description 'Wie das LLM-Wiki-Muster und das Open Knowledge Format zusammenpassen.' --sources okf-v0-2-spec,pi-llm-wiki   --set domain=wissensorganisation --set 'aliases=[LLM Wiki, OKF-Wiki]'
@@ -274,7 +280,7 @@ angelegt: wiki/concepts/llm-wiki-im-okf.md
 
 ### 17. Seiteninhalte setzen (body)
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:36Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' body sources/okf-v0-2-spec '$WORK/okf.md'   && uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' body sources/pi-llm-wiki '$WORK/pi.md'   && uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' body concepts/llm-wiki-im-okf '$WORK/konzept.md' && cat wiki/concepts/llm-wiki-im-okf.md
@@ -292,7 +298,7 @@ sources:
 - {id: pi-llm-wiki, resource: /sources/pi-llm-wiki.md}
 domain: wissensorganisation
 aliases: [LLM Wiki, OKF-Wiki]
-generated: {by: claude-code/claude-opus-5-5, at: '2026-10-25T10:32:10Z'}
+generated: {by: claude-code/claude-opus-5-5, at: '2026-10-25T18:53:36Z'}
 ---
 
 # LLM-Wiki im Open Knowledge Format
@@ -308,7 +314,7 @@ Quellen: [OKF v0.2](/sources/okf-v0-2-spec.md) und [pi-llm-wiki](/sources/pi-llm
 
 ### 18. rebuild
 
-`10:32:10Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' rebuild && cat wiki/index.md
@@ -330,7 +336,7 @@ okf_version: "0.2"
 
 ### 19. rebuild --check (nichts mehr zu tun)
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' rebuild --check
@@ -339,7 +345,7 @@ $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/ski
 
 ### 20. lint (0 Fehler verlangt)
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' lint; rc=$?; uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' lint --json | grep -c '"severity": "error"' | sed 's/^/Fehler: /'; exit $rc
@@ -350,7 +356,7 @@ Fehler: 0
 
 ### 21. status
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' status
@@ -360,24 +366,24 @@ draft: 3 · veraltet: 0 · offene [!todo]: 0
 Vertrauen: unverified 3
 Rohquellen ohne Karte: keine
 Fundweg der Quellen: Von der Person 2 (Modellvorschlag 0 %)
-Ereignisse: 9, zuletzt 2026-10-25T10:32:10Z (wiki/.events.jsonl)
+Ereignisse: 9, zuletzt 2026-10-25T18:53:36Z (wiki/.events.jsonl)
 ```
 
 ### 22. dashboard
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' dashboard && ls -l build/wiki-dashboard.html   && echo "Seiten im Dashboard: $(grep -o 'llm-wiki-im-okf' build/wiki-dashboard.html | wc -l) Treffer für llm-wiki-im-okf"   && ! grep -Eo '<(script|img|iframe)[^>]+src=.https?://|<link[^>]+href=.https?://|url\(.?https?://' build/wiki-dashboard.html   && echo 'lädt nichts aus dem Netz nach (kein script/img/iframe/link/url() auf http)'
 Dashboard: $WORK/demo-wiki/build/wiki-dashboard.html
--rw-r--r-- 1 tester tester 499126 Oct 25 10:32 build/wiki-dashboard.html
+-rw-r--r-- 1 tester tester 499606 Oct 25 18:53 build/wiki-dashboard.html
 Seiten im Dashboard: 11 Treffer für llm-wiki-im-okf
 lädt nichts aus dem Netz nach (kein script/img/iframe/link/url() auf http)
 ```
 
 ### 23. Rohquelle bleibt unverändert (SHA-256)
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ sha_ok 26aa5da029278939f914e578107242d9607d4f2dc5fe153272b82f9ed1030101 raw/okf-v0-2-spec/original/SPEC.md   && sha_ok cac7184ae31a6bd881e5362326200c899f8d58487134d28e1f11d5f0bc4466c8 raw/pi-llm-wiki/original/README.md
@@ -389,7 +395,7 @@ raw/pi-llm-wiki/original/README.md: SHA-256 cac7184ae31a6bd881e5362326200c899f8d
 
 ### 24. hooks.json: Befehle
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ grep -o '"command": *".*"' '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/hooks/hooks.json' | sed 's/^"command": *//'
@@ -401,16 +407,16 @@ $ grep -o '"command": *".*"' '/home/tester/.claude/plugins/cache/okf-wiki/okf-wi
 
 ### 25. SessionStart im Demo-Wiki: Status als Kontext
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ session-start\ 2\>/dev/null\ \|\|\ true <<< \{\"hook_event_name\":\"SessionStart\"\,\"source\":\"startup\"\}); echo "$out"; grep -q 'OKF-v0.2-Wiki unter' <<< "$out"
-{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "OKF-v0.2-Wiki unter $WORK/demo-wiki/wiki: 3 Seiten (concept 1, source 2), davon 3 draft, 0 veraltet, 0 offene [!todo]. Letztes Ereignis: 2026-10-25T10:32:10Z. Vor inhaltlicher Arbeit wiki/index.md lesen und im Wiki suchen. Nicht direkt bearbeiten: wiki/.events.jsonl, wiki/**/index.md, wiki/log.md, raw/**, build/wiki-dashboard.html. Werkzeug: uv run --quiet /home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py (new, capture, verify, lint vor Abschluss)."}}
+{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "OKF-v0.2-Wiki unter $WORK/demo-wiki/wiki: 3 Seiten (concept 1, source 2), davon 3 draft, 0 veraltet, 0 offene [!todo]. Letztes Ereignis: 2026-10-25T18:53:36Z. Vor inhaltlicher Arbeit wiki/index.md lesen und im Wiki suchen. Nicht direkt bearbeiten: wiki/.events.jsonl, wiki/**/index.md, wiki/log.md, raw/**, build/wiki-dashboard.html. Werkzeug: uv run --quiet /home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py (new, capture, verify, lint vor Abschluss)."}}
 ```
 
 ### 26. SessionStart ohne wiki.toml: keine Ausgabe
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/ohne-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ session-start\ 2\>/dev/null\ \|\|\ true <<< \{\"hook_event_name\":\"SessionStart\"\,\"source\":\"startup\"\}); test -z "$out" && echo 'leer'
@@ -419,7 +425,7 @@ leer
 
 ### 27. PreToolUse: Write auf Rohquelle wird abgelehnt
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ guard <<< \{\"hook_event_name\":\"PreToolUse\"\,\"tool_name\":\"Write\"\,\"cwd\":\"$WORK/demo-wiki\"\,\"tool_input\":\{\"file_path\":\"$WORK/demo-wiki/raw/okf-v0-2-spec/original/SPEC.md\"\,\"content\":\"x\"\}\}); echo "$out"; grep -q '"permissionDecision": "deny"' <<< "$out"
@@ -428,7 +434,7 @@ $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/
 
 ### 28. PreToolUse: Write auf wiki/index.md wird abgelehnt
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ guard <<< \{\"hook_event_name\":\"PreToolUse\"\,\"tool_name\":\"Write\"\,\"cwd\":\"$WORK/demo-wiki\"\,\"tool_input\":\{\"file_path\":\"$WORK/demo-wiki/wiki/index.md\"\,\"content\":\"x\"\}\}); echo "$out"; grep -q '"permissionDecision": "deny"' <<< "$out"
@@ -437,7 +443,7 @@ $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/
 
 ### 29. PreToolUse: Edit einer Karte ist erlaubt
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ out=$(CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ guard <<< \{\"hook_event_name\":\"PreToolUse\"\,\"tool_name\":\"Edit\"\,\"cwd\":\"$WORK/demo-wiki\"\,\"tool_input\":\{\"file_path\":\"$WORK/demo-wiki/wiki/concepts/llm-wiki-im-okf.md\"\}\}); test -z "$out" && echo 'keine Einwände'
@@ -446,17 +452,17 @@ keine Einwände
 
 ### 30. PostToolUse: Edit einer Karte landet im Ereignisstrom
 
-`10:32:11Z` · Exit 0 · bestanden
+`18:53:37Z` · Exit 0 · bestanden
 
 ```text
 $ vor=$(wc -l < '$WORK/demo-wiki/wiki/.events.jsonl'); CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ post-edit\ 2\>/dev/null\ \|\|\ true <<< \{\"hook_event_name\":\"PostToolUse\"\,\"tool_name\":\"Edit\"\,\"cwd\":\"$WORK/demo-wiki\"\,\"tool_input\":\{\"file_path\":\"$WORK/demo-wiki/wiki/concepts/llm-wiki-im-okf.md\"\}\}; nach=$(wc -l < '$WORK/demo-wiki/wiki/.events.jsonl'); echo "Ereignisse $vor -> $nach"; tail -1 '$WORK/demo-wiki/wiki/.events.jsonl'; test $nach -eq $((vor + 1))
 Ereignisse 9 -> 10
-{"ts": "2026-10-25T10:32:11Z", "kind": "edit", "page": "concepts/llm-wiki-im-okf", "by": "process:claude-code-hook", "detail": ""}
+{"ts": "2026-10-25T18:53:37Z", "kind": "edit", "page": "concepts/llm-wiki-im-okf", "by": "process:claude-code-hook", "detail": ""}
 ```
 
 ### 31. Stop: Rebuild läuft, danach ist rebuild --check leer
 
-`10:32:12Z` · Exit 0 · bestanden
+`18:53:38Z` · Exit 0 · bestanden
 
 ```text
 $ CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 CLAUDE_PROJECT_DIR=$WORK/demo-wiki bash -c uv\ run\ --quiet\ --script\ \"\$\{CLAUDE_PLUGIN_ROOT\}/skills/okf-wiki/hooks/okf_hook.py\"\ stop\ 2\>/dev/null\ \|\|\ true <<< \{\"hook_event_name\":\"Stop\"\}; cd '$WORK/demo-wiki' && uv run --quiet '/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0/skills/okf-wiki/okfwiki.py' rebuild --check && tail -3 wiki/log.md
@@ -473,5 +479,5 @@ $ CLAUDE_PLUGIN_ROOT=/home/tester/.claude/plugins/cache/okf-wiki/okf-wiki/0.1.0 
 
 ## Ergebnis
 
-Ende: 2026-10-25T10:32:12Z · 32 Schritte: 31 bestanden, 0 fehlgeschlagen, 1 übersprungen.
+Ende: 2026-10-25T18:53:38Z · 32 Schritte: 31 bestanden, 0 fehlgeschlagen, 1 übersprungen.
 
