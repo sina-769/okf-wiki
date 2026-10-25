@@ -1,5 +1,5 @@
 # wiki.toml – Grundprofil für ein neues OKF-v0.2-Wiki nach pi-llm-wiki.
-# Kopieren mit `okfwiki.py init`, dann Titel, Typen und Regeln anpassen.
+# Kopieren mit `okfw.py init`, dann Titel, Typen und Regeln anpassen.
 # Alle Pfade sind relativ zum Ordner dieser Datei (Projektordner).
 
 [wiki]

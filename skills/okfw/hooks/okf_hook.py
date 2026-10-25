@@ -2,12 +2,12 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Claude-Code-Hooks für okf-wiki, nur Standardbibliothek (läuft bei jedem Write/Edit).
+"""Claude-Code-Hooks für okfw, nur Standardbibliothek (läuft bei jedem Write/Edit).
 
   okf_hook.py guard          PreToolUse: blockiert Schreibzugriffe auf Rohquellen, Ereignisstrom und Projektionen
   okf_hook.py post-edit      PostToolUse: protokolliert Write/Edit an Wiki-Seiten im Ereignisstrom
-  okf_hook.py session-start  SessionStart: `okfwiki.py status --hook`, nur wenn das Projekt eine wiki.toml hat
-  okf_hook.py stop           Stop: `okfwiki.py rebuild --quiet`, nur wenn das Projekt eine wiki.toml hat
+  okf_hook.py session-start  SessionStart: `okfw.py status --hook`, nur wenn das Projekt eine wiki.toml hat
+  okf_hook.py stop           Stop: `okfw.py rebuild --quiet`, nur wenn das Projekt eine wiki.toml hat
 
 Guard und Ereignisprotokoll suchen die wiki.toml aufwärts ab der Zieldatei, session-start und stop
 im Projektordner ($CLAUDE_PROJECT_DIR); ohne wiki.toml tut der Hook nichts. So kostet das Plugin in
@@ -27,7 +27,7 @@ import tomllib
 from pathlib import Path
 
 RESERVED = ("index.md", "log.md")
-CORE = Path(__file__).resolve().parent.parent / "okfwiki.py"
+CORE = Path(__file__).resolve().parent.parent / "okfw.py"
 
 
 def find_config(path: Path):
@@ -150,7 +150,7 @@ def session_start(event: dict) -> None:
     if done is None:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": f"Projekt mit wiki.toml ({root}), aber `uv` fehlt im PATH: okf-wiki braucht uv "
+            "additionalContext": f"Projekt mit wiki.toml ({root}), aber `uv` fehlt im PATH: okfw braucht uv "
                                  "(https://docs.astral.sh/uv/). Der Person sagen, bevor am Wiki gearbeitet wird.",
         }}, ensure_ascii=False))
     elif done.returncode == 0:

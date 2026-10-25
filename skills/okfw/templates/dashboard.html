@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
-<!-- Erzeugt von okf-wiki (okfwiki.py dashboard). Projektion – nicht von Hand bearbeiten. -->
+<!-- Erzeugt von okfw (okfw.py dashboard). Projektion – nicht von Hand bearbeiten. -->
 <style>
 /*__FONTS__*/
 /* Gestaltung: Alabaster-Grund, weiße Karten, Charcoal,
@@ -334,7 +334,7 @@ details.sub .open-list { padding-left: 18px; }
   // Hell oder dunkel vor dem ersten Zeichnen setzen: gespeicherte Wahl, sonst die des Systems.
   (() => {
     let t = null;
-    try { t = localStorage.getItem("okf-wiki-theme"); } catch (e) { t = null; }
+    try { t = localStorage.getItem("okfw-theme"); } catch (e) { t = null; }
     if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     document.documentElement.dataset.theme = t;
   })();
@@ -870,7 +870,7 @@ details.sub .open-list { padding-left: 18px; }
   const hidden = new Set();
   let hoverN = null, selected = null, cat = "", query = "";
   // Umfang ([scope] in wiki.toml): blendet Seiten außerhalb des gewählten Umfangs aus; Wahl bleibt je Wiki gespeichert
-  const scopeKey = `okf-wiki-scope:${D.title}`;
+  const scopeKey = `okfw-scope:${D.title}`;
   let scopeSel = "";
   if (SC) {
     let stored = null;
@@ -1131,7 +1131,7 @@ details.sub .open-list { padding-left: 18px; }
     colsDirty = true;
     update();
     if (v === "net") setVB();
-    try { localStorage.setItem("okf-wiki-view", v); } catch (e) { /* ohne Speicher */ }
+    try { localStorage.setItem("okfw-view", v); } catch (e) { /* ohne Speicher */ }
   }
   $("v-net").addEventListener("click", () => setView("net"));
   $("v-cols").addEventListener("click", () => setView("cols"));
@@ -1571,21 +1571,21 @@ details.sub .open-list { padding-left: 18px; }
     document.documentElement.dataset.theme = t;
     $("th-light").setAttribute("aria-pressed", String(t === "light"));
     $("th-dark").setAttribute("aria-pressed", String(t === "dark"));
-    try { localStorage.setItem("okf-wiki-theme", t); } catch (e) { /* ohne Speicher */ }
+    try { localStorage.setItem("okfw-theme", t); } catch (e) { /* ohne Speicher */ }
   }
   $("th-light").addEventListener("click", () => setTheme("light"));
   $("th-dark").addEventListener("click", () => setTheme("dark"));
   setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
 
   const allRis = nodes.map(n => n.ris).filter(Boolean);
-  $("foot").replaceChildren(`Stand ${day(D.generated)} · erzeugt mit okf-wiki`,
+  $("foot").replaceChildren(`Stand ${day(D.generated)} · erzeugt mit okfw`,
     allRis.length ? h("button", { class: "linkish", type: "button", style: "margin-left:12px", onclick: () => download("quellen.ris", allRis.join("")) }, `Alle ${allRis.length} Quellen als RIS`) : "");
   repaint();
   colorKey();
   renderPanel();
   fit();
   update();
-  try { if (localStorage.getItem("okf-wiki-view") === "cols") setView("cols"); } catch (e) { /* ohne Speicher */ }
+  try { if (localStorage.getItem("okfw-view") === "cols") setView("cols"); } catch (e) { /* ohne Speicher */ }
 })();
 </script>
 </body>

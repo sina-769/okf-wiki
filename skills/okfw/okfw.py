@@ -3,39 +3,39 @@
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml>=6.0", "markdown>=3.5"]
 # ///
-"""okf-wiki – gemeinsamer Kern für Wissens-Wikis im Open Knowledge Format v0.2.
+"""okfw – gemeinsamer Kern für Wissens-Wikis im Open Knowledge Format v0.2.
 
 Muster: pi-llm-wiki (https://github.com/zosmaai/pi-llm-wiki), übertragen auf Claude Code.
 Jedes Projekt beschreibt sein Wiki in einer wiki.toml (Bundle-Ordner, Seitentypen,
 Pflichtfelder, Ereignisort, Exporte). Ohne wiki.toml schreibt der Kern nichts.
 
-  okfwiki.py status [--hook]
-  okfwiki.py lint [--strict] [--json] [--summary]
-  okfwiki.py rebuild [--check] [--quiet]
-  okfwiki.py new <typ> <slug> --title T [--description D] [--sources a,b] [--tags x,y]
+  okfw.py status [--hook]
+  okfw.py lint [--strict] [--json] [--summary]
+  okfw.py rebuild [--check] [--quiet]
+  okfw.py new <typ> <slug> --title T [--description D] [--sources a,b] [--tags x,y]
                  [--access A] [--resource URI] [--csl DATEI|-] [--set feld=wert ...]
                  [--doi D | --pmid P | --arxiv A | --manuell --titel T --url U [--autor --jahr --csl-typ]]
                  [--volltext PFAD [--von URL]] [--evidenz E] [--fundweg ART [--db --query] [--fundweg-von SLUG]]
                  (deutsche Optionen: --titel, --beschreibung, --quellen)
-  okfwiki.py new-source <slug> …   (= new source <slug> …)
-  okfwiki.py capture <slug> --url URL --file PFAD [--file ...] [--commit SHA]
+  okfw.py new-source <slug> …   (= new source <slug> …)
+  okfw.py capture <slug> --url URL --file PFAD [--file ...] [--commit SHA]
                  [--license NAME --license-url URL] [--note N]
-  okfwiki.py hash <pfad> [--from URL]
-  okfwiki.py verify <seite> --by human:<id> [--status stable] [--note N]
-  okfwiki.py event <art> <seite> [detail] [--by AKTEUR]
-  okfwiki.py body <seite> <datei|->
-  okfwiki.py init [--profile NAME]
-  okfwiki.py fundweg <seite> --art suche|modellvorschlag|material|person|zitatverfolgung
+  okfw.py hash <pfad> [--from URL]
+  okfw.py verify <seite> --by human:<id> [--status stable] [--note N]
+  okfw.py event <art> <seite> [detail] [--by AKTEUR]
+  okfw.py body <seite> <datei|->
+  okfw.py init [--profile NAME]
+  okfw.py fundweg <seite> --art suche|modellvorschlag|material|person|zitatverfolgung
                  [--db DB --query Q] [--von SLUG] [--at ZEIT] [--by AKTEUR] [--add]
-  okfwiki.py rechte [<seite>] [--aktion abbildung] [--json]
-  okfwiki.py lizenz <seite> --name N [--url U] [--class K] | --fetch [--force] | --missing --fetch [--dry-run]
-  okfwiki.py dashboard [--out PFAD] [--oeffentlich] [--open]
+  okfw.py rechte [<seite>] [--aktion abbildung] [--json]
+  okfw.py lizenz <seite> --name N [--url U] [--class K] | --fetch [--force] | --missing --fetch [--dry-run]
+  okfw.py dashboard [--out PFAD] [--oeffentlich] [--open]
 
 Globale Optionen: --config PFAD (sonst wiki.toml aufwärts ab cwd), --root DIR (Projektordner).
 Als Bibliothek: Wiki.load(config=..., root=...) mit pages(), lint(), projections(),
 rebuild(), new_page(), capture(), verify(), append_event():
 
-  sys.path.insert(0, str(Path.home() / ".claude/skills/okf-wiki")); import okfwiki
+  sys.path.insert(0, str(Path.home() / ".claude/skills/okfw")); import okfw
 """
 
 import argparse
@@ -457,13 +457,13 @@ def license_name_from(text: str) -> str:
 
 def http_json(url: str, timeout: int = 20, accept: str = "application/json"):
     """GET auf eine offizielle API (Crossref, Europe PMC, DataCite, OpenAlex); ohne Kennungen der Person im Kopf."""
-    req = urllib.request.Request(url, headers={"User-Agent": f"okf-wiki/{VERSION}", "Accept": accept})
+    req = urllib.request.Request(url, headers={"User-Agent": f"okfw/{VERSION}", "Accept": accept})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
 def http_bytes(url: str, timeout: int = 30) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": f"okf-wiki/{VERSION}"})
+    req = urllib.request.Request(url, headers={"User-Agent": f"okfw/{VERSION}"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
 
@@ -633,7 +633,7 @@ class Wiki:
         self.withheld: set[Path] = set()  # public_view(): Pfade der weggelassenen Seiten
         required = cfg["wiki"].get("requires_core")
         if required and tuple(map(int, VERSION.split(".")[:2])) < tuple(map(int, str(required).split(".")[:2])):
-            raise WikiError(f"wiki.toml verlangt okf-wiki {required}, installiert ist {VERSION}")
+            raise WikiError(f"wiki.toml verlangt okfw {required}, installiert ist {VERSION}")
 
     @classmethod
     def load(cls, config: str | Path | None = None, root: str | Path | None = None,
@@ -1250,7 +1250,7 @@ class Wiki:
         projections = self.projections()
         for path, content in projections.items():
             if not path.exists() or path.read_text(encoding="utf-8") != content:
-                add("projection_stale", path, "veraltet – `okfwiki.py rebuild` ausführen")
+                add("projection_stale", path, "veraltet – `okfw.py rebuild` ausführen")
         bib = self.cfg["export"].get("bibliography", {})
         if bib.get("path") and self.root / bib["path"] not in projections:
             add("projection_unavailable", self.root / bib["path"], "Literaturverzeichnis nicht erzeugbar (pandoc fehlt?)")
@@ -2491,7 +2491,7 @@ def cmd_status(wiki: Wiki, args) -> int:
             if s["hidden"] else "",
             f"Vor inhaltlicher Arbeit {wiki.rel(wiki.bundle)}/index.md lesen und im Wiki suchen.",
             f"Nicht direkt bearbeiten: {', '.join(protected_paths(wiki))}.",
-            f"Werkzeug: uv run --quiet {SKILL_DIR / 'okfwiki.py'} (new, capture, verify, lint vor Abschluss).",
+            f"Werkzeug: uv run --quiet {SKILL_DIR / 'okfw.py'} (new, capture, verify, lint vor Abschluss).",
         ]
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
                                                  "additionalContext": " ".join(t for t in text if t)}},
@@ -2767,7 +2767,7 @@ def cmd_init(args) -> int:
     wiki = Wiki.load(config=target)
     for spec in wiki.types.values():
         (wiki.bundle / spec["folder"]).mkdir(parents=True, exist_ok=True)
-    wiki.append_event("init", ".", f"Bundle angelegt (Profil {args.profile}, okf-wiki {VERSION})")
+    wiki.append_event("init", ".", f"Bundle angelegt (Profil {args.profile}, okfw {VERSION})")
     wiki.rebuild()
     print(f"angelegt: {wiki.rel(target)}, Bundle {wiki.rel(wiki.bundle)}/ – Titel und Typen in wiki.toml anpassen")
     return 0
@@ -2777,7 +2777,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", help="Pfad zur wiki.toml")
     parser.add_argument("--root", help="Projektordner (Standard: Ordner der wiki.toml)")
-    parser.add_argument("--version", action="version", version=f"okf-wiki {VERSION}")
+    parser.add_argument("--version", action="version", version=f"okfw {VERSION}")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("status", help="Kurzstatistik")
@@ -2920,7 +2920,7 @@ def main(argv=None) -> int:
     except WikiError as exc:
         if quiet_hook:
             return 0
-        print(f"okf-wiki: {exc}", file=sys.stderr)
+        print(f"okfw: {exc}", file=sys.stderr)
         return 2
 
 

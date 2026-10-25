@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nachbau-Test für das Claude-Code-Plugin okf-wiki, für eine frische Umgebung (leerer Container oder leeres HOME).
+# Nachbau-Test für das Claude-Code-Plugin okfw, für eine frische Umgebung (leerer Container oder leeres HOME).
 #
 #   nachbau.sh <marketplace-quelle> <ausgabeordner>
 #
@@ -70,7 +70,7 @@ skip() {
 }
 
 : >"$LOG"
-log "# Nachbau-Test okf-wiki"
+log "# Nachbau-Test okfw"
 log ""
 log "Beginn: $(date -u +%Y-%m-%dT%H:%M:%SZ) · Marketplace-Quelle: \`$SRC\`${REPO_COMMIT:+ · Repo-Commit: \`$REPO_COMMIT\`}"
 log ""
@@ -82,17 +82,17 @@ uname -srm; echo "HOME=$HOME"
 echo "claude $(claude --version)"; uv --version; git --version | head -1
 command -v python3 >/dev/null && echo "python3: $(python3 --version)" || echo "python3: keins im PATH"
 test ! -e "$HOME/.claude/plugins/installed_plugins.json" && echo "keine Plugins installiert"
-test ! -e "$HOME/.claude/skills/okf-wiki" && echo "kein Skill-Ordner okf-wiki"'
+test ! -e "$HOME/.claude/skills/okfw" && echo "kein Skill-Ordner okfw"'
 
 log "## Installation"
 log ""
 step "Marketplace hinzufügen" "claude plugin marketplace add '$SRC'"
-step "Plugin installieren" "claude plugin install okf-wiki@okf-wiki"
-step "Bestandteile des installierten Plugins" "claude plugin details okf-wiki@okf-wiki | sed -n '1,12p'"
-P=$(grep -o '"installPath": *"[^"]*okf-wiki[^"]*"' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null \
+step "Plugin installieren" "claude plugin install okfw@okfw"
+step "Bestandteile des installierten Plugins" "claude plugin details okfw@okfw | sed -n '1,12p'"
+P=$(grep -o '"installPath": *"[^"]*okfw[^"]*"' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null \
   | head -1 | sed 's/.*: *"//; s/"$//')
-K="$P/skills/okf-wiki/okfwiki.py"
-H="$P/skills/okf-wiki/hooks/okf_hook.py"
+K="$P/skills/okfw/okfw.py"
+H="$P/skills/okfw/hooks/okf_hook.py"
 step "Installierte Dateien (Plugin-Cache)" "test -n '$P' && cd '$P' && find . -type f | sort && cat .claude-plugin/plugin.json"
 step "Manifest streng prüfen" "claude plugin validate --strict '$P/.claude-plugin/plugin.json'"
 
@@ -132,7 +132,7 @@ step "Quellenkarte anlegen: pi-llm-wiki" "uv run --quiet '$K' new source pi-llm-
 step "Konzeptkarte anlegen, die beide Quellen nutzt" "uv run --quiet '$K' new concept llm-wiki-im-okf \
   --title 'LLM-Wiki im Open Knowledge Format' \
   --description 'Wie das LLM-Wiki-Muster und das Open Knowledge Format zusammenpassen.' --sources okf-v0-2-spec,pi-llm-wiki \
-  --set domain=wissensorganisation --set 'aliases=[LLM Wiki, OKF-Wiki]'"
+  --set domain=wissensorganisation --set 'aliases=[LLM Wiki, Open Knowledge Format Wiki]'"
 
 cat >"$WORK/okf.md" <<'EOF'
 # Open Knowledge Format (OKF), Version 0.2
@@ -172,7 +172,7 @@ Das README beschreibt ein Wiki, das ein Sprachmodell selbst pflegt.
 
 ## Relevanz
 
-Muster, nach dem okf-wiki arbeitet.
+Muster, nach dem okfw arbeitet.
 
 ## Verbindungen
 

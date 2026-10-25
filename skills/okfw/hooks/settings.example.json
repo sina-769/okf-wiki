@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet \"$HOME/.claude/skills/okf-wiki/okfwiki.py\" --root \"$CLAUDE_PROJECT_DIR\" status --hook 2>/dev/null || true",
+            "command": "uv run --quiet \"$HOME/.claude/skills/okfw/okfw.py\" --root \"$CLAUDE_PROJECT_DIR\" status --hook 2>/dev/null || true",
             "timeout": 20
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"$HOME/.claude/skills/okf-wiki/hooks/okf_hook.py\" guard",
+            "command": "uv run --quiet --script \"$HOME/.claude/skills/okfw/hooks/okf_hook.py\" guard",
             "timeout": 10
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"$HOME/.claude/skills/okf-wiki/hooks/okf_hook.py\" post-edit 2>/dev/null || true",
+            "command": "uv run --quiet --script \"$HOME/.claude/skills/okfw/hooks/okf_hook.py\" post-edit 2>/dev/null || true",
             "timeout": 10
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet \"$HOME/.claude/skills/okf-wiki/okfwiki.py\" --root \"$CLAUDE_PROJECT_DIR\" rebuild --quiet 2>/dev/null || true",
+            "command": "uv run --quiet \"$HOME/.claude/skills/okfw/okfw.py\" --root \"$CLAUDE_PROJECT_DIR\" rebuild --quiet 2>/dev/null || true",
             "timeout": 60
           }
         ]

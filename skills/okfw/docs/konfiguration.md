@@ -1,17 +1,17 @@
-# okf-wiki: Aufbau und Konfiguration
+# okfw: Aufbau und Konfiguration
 
 ## Aufbau des Skills
 
 ```text
-~/.claude/skills/okf-wiki/
+~/.claude/skills/okfw/
 ├── SKILL.md                  Arbeitsweise für Claude (Recall → Capture → Ingest → Retro → Lint)
-├── okfwiki.py                Kern: PEP 723 (Python ≥ 3.11, PyYAML und Markdown über uv), CLI und Bibliothek
+├── okfw.py                   Kern: PEP 723 (Python ≥ 3.11, PyYAML und Markdown über uv), CLI und Bibliothek
 ├── hooks/okf_hook.py         Guard und Ereignisprotokoll für Claude Code, nur Standardbibliothek
 ├── hooks/settings.example.json   Hook-Block für .claude/settings.json eines Projekts
-├── profiles/default.toml     Grundprofil für neue Wikis (okfwiki.py init)
+├── profiles/default.toml     Grundprofil für neue Wikis (okfw.py init)
 ├── profiles/dokumentation.toml   Profil für Wikis über Projektdoku und Code (init --profile dokumentation)
 ├── profiles/…                weitere fertige wiki.toml je Installation (nicht im Plugin)
-├── templates/dashboard.html  Vorlage des HTML-Dashboards (okfwiki.py dashboard)
+├── templates/dashboard.html  Vorlage des HTML-Dashboards (okfw.py dashboard)
 ├── templates/fonts/          IBM Plex Serif/Sans, JetBrains Mono (SIL OFL 1.1, Lizenztexte dabei), werden eingebettet
 ├── templates/apa.csl         Zitierstil APA 7 (Zotero, CC BY-SA 3.0), Standard für Literaturangaben
 ├── docs/konfiguration.md     diese Datei
@@ -36,7 +36,7 @@ Ordnern nicht stören.
 ## Aufruf
 
 ```bash
-uv run --quiet ~/.claude/skills/okf-wiki/okfwiki.py <befehl> …
+uv run --quiet ~/.claude/skills/okfw/okfw.py <befehl> …
 ```
 
 Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nimmt `DIR/wiki.toml`,
@@ -145,7 +145,7 @@ manual_csl_type = "document"    # CSL-Typ bei --manuell ohne --csl-typ (z. B. le
 ki_auswertung = "fragen: Verlag erlaubt kein Text-und-Data-Mining"
 
 [dashboard]
-path = "build/wiki-dashboard.html"   # Ziel von okfwiki.py dashboard; der Guard schützt die Datei
+path = "build/wiki-dashboard.html"   # Ziel von okfw.py dashboard; der Guard schützt die Datei
 auto = false                    # true: rebuild (also auch der Stop-Hook) schreibt das Dashboard mit (nie öffentlich)
 public_path = ""                # Ziel von dashboard --oeffentlich ("": <path>-oeffentlich.html daneben)
 glossary = ["concept", "entity"]  # Typen, deren Seiten ins Glossar des Dashboards kommen ([] = kein Glossar)
@@ -286,10 +286,10 @@ Graph: Kanten sind Links im Text **und** `sources[].resource`, die auf Seiten im
 ```python
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path.home() / ".claude/skills/okf-wiki"))
-import okfwiki   # braucht PyYAML im laufenden Python
+sys.path.insert(0, str(Path.home() / ".claude/skills/okfw"))
+import okfw   # braucht PyYAML im laufenden Python
 
-wiki = okfwiki.Wiki.load(root="/pfad/zum/projekt")      # liest wiki.toml
+wiki = okfw.Wiki.load(root="/pfad/zum/projekt")      # liest wiki.toml
 findings = [f.as_dict() for f in wiki.lint()]
 wiki.rebuild()
 wiki.new_page("source", "shaw-2024", csl=csl_dict, access="fulltext",
@@ -304,7 +304,7 @@ Register und Korpora.
 
 ## Dashboard
 
-`okfwiki.py dashboard` schreibt eine eigenständige HTML-Datei zum **inhaltlichen Erkunden** des Wikis:
+`okfw.py dashboard` schreibt eine eigenständige HTML-Datei zum **inhaltlichen Erkunden** des Wikis:
 Daten als JSON eingebettet, Layout und Bedienung in reinem JavaScript, keine Bibliotheken aus dem Netz,
 in unter einer Sekunde erzeugt. Technische Angaben (Lint-Befunde, Prüfstatus, Dateipfade) stehen bewusst
 nicht darin; dafür gibt es `lint` und `status`. Zeitangaben (Stand, Fundweg) stehen nur als Datum darin,
@@ -465,10 +465,10 @@ hell und dunkel; ohne gespeicherte Wahl gilt die Einstellung des Systems.
 
 | Ereignis | Aufruf | Wirkung |
 |---|---|---|
-| SessionStart | `okfwiki.py --root "$CLAUDE_PROJECT_DIR" status --hook` | Stand des Wikis und geschützte Pfade als Kontext |
+| SessionStart | `okfw.py --root "$CLAUDE_PROJECT_DIR" status --hook` | Stand des Wikis und geschützte Pfade als Kontext |
 | PreToolUse `Write\|Edit\|MultiEdit\|NotebookEdit` | `python3 -I hooks/okf_hook.py guard` | blockiert Ereignisstrom, `raw/`, Exporte, `index.md`/`log.md` im Bundle, `[paths] protected` |
 | PostToolUse `Write\|Edit\|MultiEdit` | `python3 -I hooks/okf_hook.py post-edit` | Ereignis `write`/`edit` für Seiten im Bundle |
-| Stop | `okfwiki.py --root "$CLAUDE_PROJECT_DIR" rebuild --quiet` | Projektionen nachziehen |
+| Stop | `okfw.py --root "$CLAUDE_PROJECT_DIR" rebuild --quiet` | Projektionen nachziehen |
 
 Der Guard sucht die `wiki.toml` aufwärts ab der Zieldatei (rund 30 ms, nur Standardbibliothek,
 Python ≥ 3.11 wegen `tomllib`). Schreibzugriffe über Bash erfasst er nicht; das bleibt Regel.

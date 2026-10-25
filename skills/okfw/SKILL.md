@@ -1,9 +1,11 @@
 ---
-name: okf-wiki
+name: okfw
 description: Das eine gemeinsame Werkzeug für alle Wissens-Wikis im Open Knowledge Format v0.2 nach dem pi-llm-wiki-Muster (jedes Projekt mit wiki.toml und jedes neue Wiki) – Recall, Quellen erfassen, Karten anlegen, Indexe und Log, Lint, Prüfvermerke, APA/CSL/RIS-Export, HTML-Dashboard. Nutzen, sobald Wiki-Karten gelesen, angelegt, belegt, geprüft oder exportiert werden, und immer, bevor Wiki-Werkzeuge, Wiki-Skills, Wiki-Skripte, Hooks oder Lint-Regeln gebaut oder geändert werden – auch in Projekten mit eigenem Alt-Werkzeug.
 ---
 
-# OKF-Wiki (gemeinsamer Kern)
+# okfw (gemeinsamer Kern)
+
+okfw steht für Open Knowledge Format Wiki; OKF ist das Open Knowledge Format v0.2 (GoogleCloudPlatform/knowledge-catalog).
 
 Ein Werkzeug für alle Wissens-Wikis: Markdown-Karten mit YAML-Frontmatter im
 Open Knowledge Format v0.2, gepflegt nach dem Muster von pi-llm-wiki. Was je Projekt anders ist
@@ -22,7 +24,7 @@ Hintergrund), und gilt zusätzlich zu diesem Skill.
   der nur Regeln enthält.
 - Gilt eine Regel oder Funktion in mehr als einem Projekt (Befehl, Lint-Regel, Exportformat,
   Metadatenabruf, Zitier- und Belegregel, Dashboard-Funktion), gehört sie **hierher**
-  (`SKILL.md`, `okfwiki.py`, `templates/`, `profiles/`, `docs/`).
+  (`SKILL.md`, `okfw.py`, `templates/`, `profiles/`, `docs/`).
 - Ins Projekt gehört nur, was allein dieses Projekt betrifft: in `CLAUDE.md` Zielgruppe, Sprache,
   Zitiermodus und Schema eines Aussagenregisters, Ausgabeformat; in `wiki.toml` Typen, Abschnitte,
   Pflichtfelder, Vokabulare und Pfade.
@@ -33,11 +35,11 @@ Hintergrund), und gilt zusätzlich zu diesem Skill.
 Werkzeug, aus dem Projektordner (sucht `wiki.toml` aufwärts):
 
 ```bash
-uv run --quiet ~/.claude/skills/okf-wiki/okfwiki.py <befehl>
+uv run --quiet ~/.claude/skills/okfw/okfw.py <befehl>
 ```
 
-`~/.claude/skills/okf-wiki` steht hier und unten für den Ordner dieser Datei. Als Plugin installiert
-liegt er im Plugin-Cache (`${CLAUDE_PLUGIN_ROOT}/skills/okf-wiki`); den vollen Pfad nennt der
+`~/.claude/skills/okfw` steht hier und unten für den Ordner dieser Datei. Als Plugin installiert
+liegt er im Plugin-Cache (`${CLAUDE_PLUGIN_ROOT}/skills/okfw`); den vollen Pfad nennt der
 SessionStart-Hook in Projekten mit `wiki.toml`. Voraussetzung ist nur `uv`: Es holt Python ≥ 3.11 und
 die Pakete aus dem Skriptkopf (PyYAML, Markdown) beim ersten Aufruf.
 Hat das Projekt eine Weiche `tools/wiki.py`, ist `uv run tools/wiki.py <befehl>` gleichwertig.
@@ -131,7 +133,7 @@ Gilt in jedem Wiki und für alles, was aus dem Wiki in ein Produkt geht (Folie, 
 Prüfung durch einen Menschen (nur auf ausdrückliche Bitte und mit deren Kennung):
 
 ```bash
-uv run --quiet ~/.claude/skills/okf-wiki/okfwiki.py verify concepts/x --by human:<id> --status stable
+uv run --quiet ~/.claude/skills/okfw/okfw.py verify concepts/x --by human:<id> --status stable
 ```
 
 ## Befehle
@@ -192,9 +194,9 @@ verweisen; Lint meldet das als `visibility_leak`. Nur die öffentliche Datei wei
 SessionStart-Status, Guard für Rohquellen/Ereignisse/Projektionen, Ereignisprotokoll, Rebuild beim Stop.
 Alle vier wirken nur in Projekten mit `wiki.toml`.
 
-- **Als Plugin** (`claude plugin install okf-wiki@okf-wiki`): Die Hooks kommen mit dem Plugin
+- **Als Plugin** (`claude plugin install okfw@okfw`): Die Hooks kommen mit dem Plugin
   (`hooks/hooks.json` im Plugin), im Projekt ist nichts einzutragen.
-- **Als Skill-Ordner** (`~/.claude/skills/okf-wiki`): `hooks/settings.example.json` in die
+- **Als Skill-Ordner** (`~/.claude/skills/okfw`): `hooks/settings.example.json` in die
   `.claude/settings.json` des Projekts übernehmen.
 - Nicht beides zugleich, sonst laufen die Hooks doppelt und das Ereignisprotokoll schreibt jede
   Änderung zweimal.

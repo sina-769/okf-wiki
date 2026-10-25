@@ -1,13 +1,14 @@
-# okf-wiki
+# okfw
 
 Claude-Code-Plugin für Wissens-Wikis im [Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/a8291a1a656669b8766fd4ff0f985505fb955e94/okf/SPEC.md)
 (OKF), gepflegt nach dem LLM-Wiki-Muster von [pi-llm-wiki](https://github.com/zosmaai/pi-llm-wiki):
 Markdown-Karten mit YAML-Frontmatter, unveränderliche Rohquellen, ein Ereignisstrom, generierte Indexe,
 Belegpflicht für jede Sachaussage und ein HTML-Dashboard zum Lesen und Lernen.
+okfw steht für Open Knowledge Format Wiki; OKF ist das Open Knowledge Format v0.2 (GoogleCloudPlatform/knowledge-catalog).
 
-- **Skill** `okf-wiki`: Arbeitsweise für Claude (Recall → Capture → Ingest → Retro → Lint), Beleg-,
+- **Skill** `okfw`: Arbeitsweise für Claude (Recall → Capture → Ingest → Retro → Lint), Beleg-,
   Lizenz- und Vertrauensregeln.
-- **Kern** `skills/okf-wiki/okfwiki.py`: CLI und Python-Bibliothek (`init`, `capture`, `new`, `body`,
+- **Kern** `skills/okfw/okfw.py`: CLI und Python-Bibliothek (`init`, `capture`, `new`, `body`,
   `rebuild`, `lint`, `verify`, `lizenz`, `rechte`, `dashboard` …). Alles Projektspezifische steht in
   einer `wiki.toml` im Projekt; ohne `wiki.toml` schreibt der Kern nichts.
 - **Hooks**: Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und generierte
@@ -57,15 +58,15 @@ DataCite, OpenAlex, arXiv). Getestet unter macOS und Debian 12 (Container).
 ## Installation
 
 ```bash
-claude plugin marketplace add sina-769/okf-wiki
-claude plugin install okf-wiki@okf-wiki
+claude plugin marketplace add sina-769/okfw
+claude plugin install okfw@okfw
 ```
 
-Statt `sina-769/okf-wiki` geht auch ein lokaler Ordner: ein Klon des Repos oder ein Ordner mit
+Statt `sina-769/okfw` geht auch ein lokaler Ordner: ein Klon des Repos oder ein Ordner mit
 `.claude-plugin/marketplace.json`. Danach Claude Code neu starten (oder `/reload-plugins`).
 
-Ohne Plugin geht es auch als Skill-Ordner: `skills/okf-wiki/` nach `~/.claude/skills/okf-wiki/` kopieren
-und `skills/okf-wiki/hooks/settings.example.json` in die `.claude/settings.json` des Projekts übernehmen.
+Ohne Plugin geht es auch als Skill-Ordner: `skills/okfw/` nach `~/.claude/skills/okfw/` kopieren
+und `skills/okfw/hooks/settings.example.json` in die `.claude/settings.json` des Projekts übernehmen.
 Nicht beides zugleich, sonst laufen die Hooks doppelt.
 
 ## Erste Schritte
@@ -73,7 +74,7 @@ Nicht beides zugleich, sonst laufen die Hooks doppelt.
 Im Projektordner (Pfad zum Kern aus der Plugin-Installation):
 
 ```bash
-OKF=$(ls -d ~/.claude/plugins/cache/okf-wiki/okf-wiki/*/skills/okf-wiki | tail -1)/okfwiki.py
+OKF=$(ls -d ~/.claude/plugins/cache/okfw/okfw/*/skills/okfw | tail -1)/okfw.py
 uv run --quiet "$OKF" init --profile default        # wiki.toml und wiki/ anlegen
 uv run --quiet "$OKF" capture <slug> --url URL --file PFAD --license NAME --license-url URL
 uv run --quiet "$OKF" new source <slug> --title … --description … --access fulltext --set raw_packet=raw/<slug>
@@ -85,7 +86,7 @@ Für ein Wiki über Projektdoku und Code gibt es `init --profile dokumentation`:
 Dokumentation und Code, Lizenz und Rohquellen-Paket als Pflicht, fehlender Fundweg als Warnung.
 
 Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. Alle Befehle und
-`wiki.toml`-Schlüssel: [skills/okf-wiki/docs/konfiguration.md](skills/okf-wiki/docs/konfiguration.md).
+`wiki.toml`-Schlüssel: [skills/okfw/docs/konfiguration.md](skills/okfw/docs/konfiguration.md).
 
 ## Nachbau-Test
 
@@ -97,13 +98,13 @@ mit genau den Befehlen aus `hooks/hooks.json` auf. Jeder Schritt landet mit Befe
 Exit-Code in einem Protokoll.
 
 ```bash
-docker build -t okf-wiki-nachbau -f tests/Dockerfile tests
-docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okf-wiki-nachbau /src /out/lauf-$(date +%H%M%S)
+docker build -t okfw-nachbau -f tests/Dockerfile tests
+docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okfw-nachbau /src /out/lauf-$(date +%H%M%S)
 ```
 
 Letztes Protokoll: [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md).
 
 ## Lizenz und Dank
 
-okf-wiki steht unter der [MIT-Lizenz](LICENSE). Ausgenommen sind die mitgelieferten Schriften und der
+okfw steht unter der [MIT-Lizenz](LICENSE). Ausgenommen sind die mitgelieferten Schriften und der
 Zitierstil mit eigener Lizenz; sie und die Vorbilder nennt [NOTICE.md](NOTICE.md).

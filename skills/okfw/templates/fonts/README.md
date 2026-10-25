@@ -1,6 +1,6 @@
 # Schriften für das Dashboard
 
-Eingebettet von `okfwiki.py dashboard`. Alle vier stehen unter der SIL Open Font License 1.1, die
+Eingebettet von `okfw.py dashboard`. Alle vier stehen unter der SIL Open Font License 1.1, die
 Weitergabe und Einbettung erlaubt; der Lizenztext liegt bei (`OFL-IBM-Plex.txt`,
 `OFL-JetBrains-Mono.txt`, Text unverändert aus den Repositorien der Schriften, Zeilenenden LF, ohne Leerzeichen am Zeilenende).
 
@@ -20,7 +20,7 @@ keine veränderte Fassung (Modified Version) im Sinn der OFL; die Einschränkung
 (Bedingung 3, betrifft den Nutzern angezeigten Schriftnamen) gilt nur für veränderte Fassungen.
 Lizenztexte: IBM/plex `LICENSE.txt` und JetBrains/JetBrainsMono `OFL.txt` an denselben Commits.
 
-`okfwiki.py dashboard` schreibt vor die eingebetteten Schriften einen CSS-Kommentar mit dem
+`okfw.py dashboard` schreibt vor die eingebetteten Schriften einen CSS-Kommentar mit dem
 Copyright-Vermerk (erste Zeile des jeweiligen Lizenztexts) und dem Lizenzhinweis (Name, Link), damit beides
 in der erzeugten Datei im Klartext steht; den Lizenzhinweis mit Link tragen auch die Schriftdateien selbst
 in ihren Metadaten. Eine Schrift ohne ihren Lizenztext in diesem Ordner wird nicht eingebettet.

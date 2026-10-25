@@ -1,8 +1,8 @@
 # Frische Umgebung für den Nachbau-Test: Debian mit Node (für Claude Code), git, curl und uv.
 # Kein Python, kein Claude-Login, keine Plugins, kein ~/.claude.
 #
-#   docker build -t okf-wiki-nachbau -f tests/Dockerfile tests
-#   docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okf-wiki-nachbau /src /out/lauf-$(date +%H%M%S)
+#   docker build -t okfw-nachbau -f tests/Dockerfile tests
+#   docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okfw-nachbau /src /out/lauf-$(date +%H%M%S)
 #
 # Je Lauf ein neuer Unterordner: Unter OrbStack sah der Container Dateien, die der Mac kurz vorher
 # gelöscht hatte, noch einige Sekunden lang als fehlend, und Protokollzeilen gingen verloren.
