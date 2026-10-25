@@ -57,12 +57,12 @@ DataCite, OpenAlex, arXiv). Getestet unter macOS und Debian 12 (Container).
 ## Installation
 
 ```bash
-claude plugin marketplace add <ordner-oder-repo>
+claude plugin marketplace add sina-769/okf-wiki
 claude plugin install okf-wiki@okf-wiki
 ```
 
-`<ordner-oder-repo>` ist dieser Ordner (er enthält `.claude-plugin/marketplace.json`), ein Git-Klon davon
-oder später das veröffentlichte Repo. Danach Claude Code neu starten (oder `/reload-plugins`).
+Statt `sina-769/okf-wiki` geht auch ein lokaler Ordner: ein Klon des Repos oder ein Ordner mit
+`.claude-plugin/marketplace.json`. Danach Claude Code neu starten (oder `/reload-plugins`).
 
 Ohne Plugin geht es auch als Skill-Ordner: `skills/okf-wiki/` nach `~/.claude/skills/okf-wiki/` kopieren
 und `skills/okf-wiki/hooks/settings.example.json` in die `.claude/settings.json` des Projekts übernehmen.
@@ -82,7 +82,7 @@ uv run --quiet "$OKF" dashboard                     # build/wiki-dashboard.html
 ```
 
 Für ein Wiki über Projektdoku und Code gibt es `init --profile dokumentation`: Quellen mit den Unterarten
-Dokumentation und Code, Lizenz als Pflicht, fehlender Fundweg als Warnung.
+Dokumentation und Code, Lizenz und Rohquellen-Paket als Pflicht, fehlender Fundweg als Warnung.
 
 Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. Alle Befehle und
 `wiki.toml`-Schlüssel: [skills/okf-wiki/docs/konfiguration.md](skills/okf-wiki/docs/konfiguration.md).
