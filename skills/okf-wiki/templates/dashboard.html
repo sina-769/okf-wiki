@@ -1,0 +1,1587 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<!-- Erzeugt von okf-wiki (okfwiki.py dashboard). Projektion – nicht von Hand bearbeiten. -->
+<style>
+/*__FONTS__*/
+/* Gestaltung: Alabaster-Grund, weiße Karten, Charcoal,
+   Akzent Gelb (dunkel: Blau), IBM Plex Serif/Sans, JetBrains Mono. Datenfarben: validierte Palette
+   (vier Farben bestehen den Validator für Netzdiagramme, weitere Werte erscheinen grau). */
+:root {
+  color-scheme: light;
+  --font-heading: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --page: #F4F3ED; --surface: #FFFFFF; --ink: #1A1A1A; --ink-2: rgba(26, 26, 26, 0.75); --muted: rgba(26, 26, 26, 0.65);
+  --grid: rgba(26, 26, 26, 0.10); --border: rgba(26, 26, 26, 0.10);
+  --accent: #FCE53A; --accent-hover: #E6CE34; --on-accent: #1A1A1A;
+  --c1: #2a78d6; --c2: #008300; --c3: #eda100; --c4: #e87ba4; --c-other: #898781;
+  --warning: #fab219;
+  --edge: rgba(26, 26, 26, 0.14); --edge-hi: rgba(26, 26, 26, 0.7); --wash: rgba(26, 26, 26, 0.05);
+  --shadow: rgba(0, 0, 0, 0.18);
+  --code-bg: rgba(26, 26, 26, 0.08); --pre-bg: #1A1A1A; --pre-ink: #e5e5e5;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #1F1F1F; --surface: #161616; --ink: #E5E2D9; --ink-2: rgba(229, 226, 217, 0.75); --muted: rgba(229, 226, 217, 0.62);
+  --grid: rgba(229, 226, 217, 0.10); --border: rgba(229, 226, 217, 0.12);
+  --accent: #3a5efc; --accent-hover: #2d4fdb; --on-accent: #FFFFFF;
+  --c1: #3987e5; --c2: #008300; --c3: #c98500; --c4: #d55181; --c-other: #898781;
+  --edge: rgba(229, 226, 217, 0.13); --edge-hi: rgba(229, 226, 217, 0.75); --wash: rgba(229, 226, 217, 0.06);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --code-bg: rgba(229, 226, 217, 0.10); --pre-bg: #252525; --pre-ink: #e5e5e5;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--page); color: var(--ink); }
+body { font: 14px/1.5 var(--font-body); }
+main { max-width: 1440px; margin: 0 auto; padding: 16px; }
+h1 { font-family: var(--font-heading); font-size: 26px; font-weight: 400; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-heading); font-size: 18px; font-weight: 400; margin: 0 0 10px; text-wrap: balance; }
+h3 { font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--ink-2); }
+.hl { background: linear-gradient(180deg, transparent 60%, color-mix(in srgb, var(--accent) 30%, transparent) 65%, var(--accent) 95%); }
+a { color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--accent); text-decoration-thickness: 2.5px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sub { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; min-width: 0; }
+.pad { padding: 14px 16px; }
+.btn-primary { background: var(--accent); color: var(--on-accent); border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); border-radius: 8px; padding: 6px 14px; font-weight: 600; font-size: 13px; cursor: pointer; }
+.btn-primary:hover { background: var(--accent-hover); }
+.ghost { border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); background: transparent; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+.ghost:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.linkish { border: 0; background: none; padding: 0; cursor: pointer; text-align: left; color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; font: inherit; }
+.tag { display: inline-flex; align-items: center; padding: 1px 8px; font: 11px var(--font-mono); letter-spacing: 0.02em; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); color: var(--ink-2); background: transparent; }
+button.tag { cursor: pointer; }
+button.tag:hover { border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 8px; overflow: hidden; }
+.segb { border: 0; background: transparent; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+.segb + .segb { border-left: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
+.segb[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.tile { padding: 12px 14px; }
+.tile .l { color: var(--ink-2); font-size: 12px; }
+.tile .v { font-size: 26px; font-weight: 600; line-height: 1.25; }
+.tile .s { color: var(--muted); font-size: 12px; }
+
+.netz { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; margin-bottom: 12px; }
+.netz.wide { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 960px) { .netz { grid-template-columns: minmax(0, 1fr); } }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: transparent; border-radius: 999px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+.chip:hover { background: var(--wash); }
+.chip[aria-pressed="false"] { opacity: 0.45; }
+.chip[aria-pressed="false"] .lab { text-decoration: line-through; }
+.chip .n { color: var(--muted); }
+select, input[type="search"] { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 8px; padding: 4px 8px; max-width: 100%; }
+input[type="search"] { width: 14em; }
+label.check { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.edgekey, .colorkey { font-size: 12px; color: var(--muted); display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.colorkey span { display: inline-flex; gap: 4px; align-items: center; }
+.hitcount { font-size: 12px; color: var(--ink-2); }
+.graphwrap { position: relative; }
+#graph { width: 100%; height: min(72vh, 780px); min-height: 420px; display: block; cursor: grab; touch-action: none; user-select: none; }
+#graph.panning { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 4px; }
+.zoom button { background: var(--surface); }
+.edge { stroke: var(--edge); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.edge.src { stroke-dasharray: 3 3; }
+.edge.hi { stroke: var(--edge-hi); stroke-width: 1.5; }
+.node { cursor: pointer; }
+.node .dot { stroke: var(--surface); stroke-width: 1.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 1px 1.5px var(--shadow)); }
+.node .dot.ring { stroke-width: 2.6; }
+.node .halo { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; opacity: 0; }
+.node .grab { fill: transparent; stroke: none; } /* Trefferfläche größer als der kleine Punkt */
+.node.sel .halo, .node.hit .halo { opacity: 1; }
+.node.dim, .edge.dim, .label.dim { opacity: 0.12; }
+.label { fill: var(--ink-2); pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-linejoin: round; }
+
+.cols[hidden], .seg[hidden] { display: none; }
+.cols-bar { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--grid); }
+.cols-scroll { max-height: calc(100vh - 80px); min-height: 560px; overflow: auto; } /* fast bildschirmhoch */
+#colsvg { display: block; }
+.chead { font-family: var(--font-heading); font-size: 15px; fill: var(--ink); }
+.crow { cursor: pointer; }
+.crow .bg { fill: var(--surface); stroke: var(--grid); stroke-width: 1; }
+.crow:hover .bg, .crow:focus-visible .bg { fill: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.crow .t1 { font-size: 12.5px; font-weight: 600; fill: var(--ink); }
+.crow .t2 { font-size: 11.5px; fill: var(--muted); }
+.crow .dot { stroke: none; }
+.crow .dot.ring { stroke-width: 2; }
+.crow.sel .bg, .crow.hit .bg { stroke: var(--ink); stroke-width: 1.5; }
+.crow.dim { opacity: 0.28; }
+.cthread { fill: none; stroke: var(--edge); stroke-width: 1; }
+.cthread.src { stroke-dasharray: 3 3; }
+.cthread.hi { stroke: var(--edge-hi); stroke-width: 1.6; }
+.cthread.dim { opacity: 0.12; }
+
+/* Vorschaukarte (Hover, in der Spaltenansicht per Klick angeheftet) */
+#tip { position: fixed; z-index: 15; pointer-events: none; width: min(360px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16); display: none; }
+#tip.pinned { pointer-events: auto; width: min(580px, calc(100vw - 24px)); max-height: min(80vh, 780px); overflow-y: auto; overscroll-behavior: contain; padding: 0; }
+.pv-bar { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--grid); font: 11px var(--font-mono); color: var(--muted); }
+.pv-bar .sp { flex: 1; }
+.pv-bar button { font-family: var(--font-body); }
+.pv-inner { padding: 14px 18px 18px; }
+.pv-inner .r-head { padding-bottom: 12px; margin-bottom: 14px; }
+.pv-inner .r-head h1 { font-size: 22px; line-height: 1.25; margin: 0 0 8px; }
+.pv-inner .r-desc { font-size: 15px; }
+.pv-inner .prose-content { font-size: 15px; line-height: 1.65; }
+.pv-inner .prose-content h2 { font-size: 18px; margin: 24px 0 8px; }
+.pv-inner .prose-content h3 { font-size: 16px; margin: 18px 0 6px; }
+.pv-inner .prose-content p, .pv-inner .prose-content li { line-height: 1.65; }
+.pv-inner .prose-content blockquote { padding: 10px 14px; margin: 14px 0; }
+.pv-inner .r-section { margin-top: 20px; padding-top: 12px; }
+.pv-inner .r-section h2 { font-size: 16px; }
+.pv-inner .lit li { font-size: 13px; padding: 8px 0 8px 2em; }
+.pv-inner .r-apa { font-size: 13px; }
+.pv-kind { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font: 11px var(--font-mono); color: var(--muted); }
+.pv-title { font-family: var(--font-heading); font-size: 17px; line-height: 1.3; margin: 6px 0; }
+.pv-cite { font-size: 12px; color: var(--ink-2); margin: -2px 0 6px; }
+.pv-desc { margin: 0 0 6px; }
+.pv-ex { color: var(--ink-2); margin: 0 0 6px; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.pv-out { font-size: 12px; color: var(--muted); }
+.pv-foot { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--grid); font-size: 11px; color: var(--muted); }
+
+.panel { padding: 14px 16px; max-height: calc(min(72vh, 780px) + 54px); overflow: auto; }
+.netz.wide .panel { max-height: none; }
+.panel .empty { color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; color: var(--ink-2); font-size: 12px; margin: 6px 0 10px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; }
+.desc { margin: 0 0 10px; }
+.excerpt { color: var(--ink-2); margin: 0 0 10px; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { margin: 2px 0; }
+.list button { border: 0; background: transparent; padding: 2px 4px; margin-left: -4px; border-radius: 4px; cursor: pointer; text-align: left; display: inline-flex; gap: 6px; align-items: center; }
+.list button:hover { background: var(--wash); }
+.kind { color: var(--muted); font-size: 11px; }
+details > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
+.panel details.links > summary { padding: 2px 0; margin: 14px 0 4px; font-size: 13px; color: var(--ink-2); }
+.panel details.links[open] > summary { margin-bottom: 6px; }
+.note { font-size: 12px; color: var(--muted); }
+
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { font-weight: 600; color: var(--ink-2); font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pages th { cursor: pointer; white-space: nowrap; }
+.pages th[aria-sort="ascending"]::after { content: " ▲"; }
+.pages th[aria-sort="descending"]::after { content: " ▼"; }
+.pages tbody tr { cursor: pointer; }
+.pages tbody tr:hover { background: var(--wash); }
+.pages td .d { color: var(--muted); font-size: 12px; }
+footer { color: var(--muted); font-size: 12px; margin: 16px 0 8px; }
+
+/* Leseansicht (Aufbau wie ein Blogartikel der Website) */
+body.reading { overflow: hidden; }
+.reader { position: fixed; inset: 0; z-index: 20; background: var(--page); overflow-y: auto; padding: 16px; }
+.reader[hidden] { display: none; }
+.reader-bar { max-width: 56rem; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.reader-bar .sp { flex: 1; }
+.r-card { max-width: 56rem; margin: 0 auto 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px 20px; }
+@media (min-width: 768px) { .r-card { padding: 44px 48px; } }
+.crumb { font-size: 13px; color: var(--muted); margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.r-head { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
+.r-head h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.2; margin-bottom: 12px; }
+.r-desc { font-size: 17px; color: var(--ink-2); margin: 0 0 12px; }
+.r-meta { font: 12px var(--font-mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.r-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 14px; }
+.r-section h2 { font-size: 18px; }
+.r-section details > summary { padding: 4px 0; font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.r-section details.r-fold > summary { padding: 0; font-weight: 400; color: var(--ink); }
+.r-fold > summary h2 { display: inline; margin: 0; }
+.r-fold[open] > summary { margin-bottom: 10px; }
+.r-kicker { font: 13px var(--font-mono); color: var(--muted); margin-bottom: 8px; }
+.metalink { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.metalink:hover { color: var(--ink); text-decoration-color: var(--accent); }
+.rights { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 4px; }
+.rights th, .rights td { text-align: left; vertical-align: top; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--grid); }
+.rights th { font-weight: 400; font-size: 14px; color: var(--ink); width: 42%; }
+.r-note { color: var(--muted); font-size: 13px; }
+.r-lic { margin: 0 0 6px; overflow-wrap: anywhere; }
+.fundweg { list-style: none; padding: 0; margin: 0; }
+.fundweg li { padding: 4px 0; overflow-wrap: anywhere; }
+.fundweg code { font-family: var(--font-mono); font-size: 0.85em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.right { display: inline-block; white-space: nowrap; padding: 1px 8px; border-radius: 999px; font: 600 11px var(--font-mono); border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); }
+.right.r-ja { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.right.r-nein { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.right.r-fragen { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.facet-list { list-style: none; padding: 0; margin: 8px 0 0; }
+.facet-list li { padding: 9px 0; border-bottom: 1px solid var(--grid); }
+.facet-list .linkish { font-size: 16px; line-height: 1.4; }
+.fl-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.r-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.r-apa a { overflow-wrap: anywhere; }
+.r-apa { overflow-wrap: anywhere; margin-top: 14px; padding: 12px 16px; border-left: 3px solid var(--ink); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 8px; font-size: 15px; color: var(--ink); }
+.r-apa-l { font: 600 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.lit { list-style: none; padding: 0; margin: 12px 0 0; }
+.lit li { padding: 10px 0 10px 2em; text-indent: -2em; border-bottom: 1px solid var(--grid); line-height: 1.6; color: var(--ink-2); }
+.lit li:target { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.lit .lit-entry a { color: var(--ink); overflow-wrap: anywhere; }
+.lit .lit-meta { display: inline-flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-left: 10px; text-indent: 0; vertical-align: 1px; }
+.lit .lit-meta .linkish { font-size: 12px; color: var(--muted); }
+.tag.citation { border-style: dashed; }
+.tag.internal { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--ink); }
+
+.prose-content { font-size: 17px; line-height: 1.7; color: var(--ink-2); overflow-wrap: break-word; }
+.prose-content h2 { font-family: var(--font-heading); font-size: 22px; font-weight: 400; color: var(--ink); margin: 40px 0 14px; }
+.prose-content h3 { font-family: var(--font-heading); font-size: 18px; font-weight: 400; color: var(--ink); margin: 32px 0 10px; }
+.prose-content h4 { font-size: 16px; color: var(--ink); margin: 24px 0 8px; }
+.prose-content > :first-child { margin-top: 0; }
+.prose-content p { margin: 0 0 16px; line-height: 1.75; }
+.prose-content ul, .prose-content ol { padding-left: 24px; margin: 16px 0; }
+.prose-content li { margin-bottom: 6px; line-height: 1.75; }
+.prose-content strong { color: var(--ink); font-weight: 600; }
+.prose-content a { color: var(--ink); }
+.prose-content a.missing { text-decoration-style: dashed; text-decoration-color: var(--muted); cursor: help; }
+.prose-content .cite a { text-decoration-thickness: 1px; }
+.prose-content code { font-family: var(--font-mono); font-size: 0.85em; background: var(--code-bg); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
+.prose-content pre { font-family: var(--font-mono); background: var(--pre-bg); color: var(--pre-ink); padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 14px; line-height: 1.6; margin: 24px 0; }
+.prose-content pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+/* Textdiagramme (```text, ASCII-Bäume): heller Grund wie eine Abbildung, ohne Ligaturen, Zeilenhöhe so,
+   dass die Rahmenzeichen von JetBrains Mono (Höhe 1,52 em) senkrecht durchgehen; breite Bäume scrollen waagerecht. */
+.prose-content pre.diagram { background: var(--wash); color: var(--ink); border: 1px solid var(--border); font-size: 13.5px; line-height: 1.45; font-variant-ligatures: none; tab-size: 4; white-space: pre; }
+.pv-inner .prose-content pre.diagram { font-size: 12px; padding: 12px 14px; }
+@media (max-width: 600px) { .prose-content pre, .prose-content pre.diagram { font-size: 12px; padding: 12px 14px; } }
+/* Sprung zu einer offenen Stelle */
+.prose-content .flash { animation: flash 2.6s ease-out 1; border-radius: 6px; scroll-margin: 80px; }
+@keyframes flash { 0%, 45% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+.prose-content blockquote { border-left: 3px solid var(--ink); background: color-mix(in srgb, var(--accent) 14%, transparent); padding: 14px 20px; border-radius: 8px; margin: 24px 0; }
+.prose-content blockquote p { color: var(--ink); margin-bottom: 0; }
+.prose-content blockquote p + p { margin-top: 10px; }
+.prose-content blockquote.callout.todo { border-left: 3px solid color-mix(in srgb, var(--ink) 22%, transparent); background: var(--wash); }
+.prose-content blockquote.callout.todo::before { content: "Offen"; display: block; font: 600 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.prose-content blockquote.callout.contra { border-left: 3px solid var(--warning); background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.prose-content table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 15px; display: block; overflow-x: auto; }
+.prose-content thead { border-bottom: 1.5px solid var(--ink); }
+.prose-content th { text-align: left; padding: 10px 14px; font-weight: 600; color: var(--ink); font-size: 14px; }
+.prose-content td { padding: 10px 14px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+.prose-content hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+.prose-content .footnote { font-size: 14px; color: var(--muted); margin-top: 40px; }
+.prose-content .footnote-ref { text-decoration: none; font-size: 0.8em; padding: 0 1px; }
+.prose-content img { max-width: 100%; border-radius: 14px; }
+
+/* Sprungleiste im Kopf */
+.jump { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 13px; }
+.jump[hidden] { display: none; }
+details.fold { margin-bottom: 12px; }
+details.fold[open] > summary { border-bottom: 1px solid var(--grid); }
+.sumnote { font-weight: 400; color: var(--muted); }
+
+/* Lernpfad: Einstiegsseiten als nummerierte Schritte */
+.lern { margin-bottom: 12px; }
+.lern[hidden] { display: none; }
+.lern-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.lern-head h2 { margin: 0 0 2px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; align-content: start; padding: 10px 12px; border: 1px solid var(--grid); border-radius: 10px; cursor: pointer; }
+.step:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.step-n { grid-row: span 3; display: inline-block; width: 26px; height: 26px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 13px/26px var(--font-body); text-align: center; }
+.step .linkish { font-weight: 600; line-height: 1.35; }
+.step-k { display: inline-flex; gap: 5px; align-items: center; font: 11px var(--font-mono); color: var(--muted); }
+.step-d { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.r-path { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 12px var(--font-mono); color: var(--muted); margin-bottom: 12px; }
+.r-path .step-n { width: 22px; height: 22px; line-height: 22px; font-size: 12px; }
+.r-path .ghost { font: 12px var(--font-body); padding: 1px 8px; }
+.r-pathnav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+.r-pathnav button { flex: 0 1 calc(50% - 5px); min-width: 220px; text-align: left; border: 1px solid var(--border); background: transparent; border-radius: 10px; padding: 12px 14px; cursor: pointer; color: var(--ink); }
+.r-pathnav button:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.r-pathnav .next { margin-left: auto; text-align: right; }
+.r-pathnav .lbl { display: block; font: 11px var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.r-pathnav .ttl { display: block; font-family: var(--font-heading); font-size: 16px; line-height: 1.3; margin-top: 3px; }
+.r-pathnav .end { flex: 0 1 calc(50% - 5px); margin-left: auto; align-self: center; text-align: right; font-size: 13px; color: var(--muted); }
+@media (max-width: 600px) { .r-pathnav button, .r-pathnav .end { flex-basis: 100%; min-width: 0; } }
+
+/* Glossar */
+.gl-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 4px; }
+.letters { display: flex; flex-wrap: wrap; gap: 2px; }
+.letters button { border: 0; background: none; min-width: 24px; padding: 2px 4px; border-radius: 4px; cursor: pointer; font: 600 12px var(--font-mono); color: var(--ink-2); }
+.letters button:hover { background: var(--wash); color: var(--ink); }
+.letters button:disabled { opacity: 0.3; cursor: default; background: none; }
+.gl-cols { columns: 2 360px; column-gap: 36px; }
+.gl-group h3 { font-family: var(--font-heading); font-size: 18px; font-weight: 400; color: var(--ink); margin: 14px 0 2px; padding-bottom: 2px; border-bottom: 1px solid var(--grid); break-after: avoid; }
+.gl { margin: 0; }
+.gl-entry { break-inside: avoid; padding: 8px 0 4px; }
+.gl dt { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.gl dt .linkish { font-weight: 600; font-size: 15px; }
+.gl dd { margin: 2px 0 0; color: var(--ink-2); }
+.gl dd.aka { color: var(--muted); font-size: 12px; }
+.gl-empty { color: var(--muted); margin: 12px 0 0; }
+
+/* Offene Stellen */
+.open-group h3 { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--ink); margin: 16px 0 4px; }
+.open-list { list-style: none; padding: 0; margin: 0; }
+.open-list li { padding: 8px 0; border-bottom: 1px solid var(--grid); }
+.open-list .kind { margin-left: 8px; }
+.open-list .snip { border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font: inherit; font-size: 13px; color: var(--ink-2); }
+.open-list .snip:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); }
+.mark { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.mark.contra { background: var(--warning); }
+.mark.check { background: var(--c1); }
+.mark.todo { background: color-mix(in srgb, var(--ink) 30%, transparent); }
+details.sub { margin-top: 16px; }
+details.sub > summary { padding: 6px 0; font-size: 14px; color: var(--ink); }
+details.sub details > summary { padding: 6px 0; font-weight: 400; display: list-item; }
+details.sub .open-list { padding-left: 18px; }
+</style>
+<script>
+  // Hell oder dunkel vor dem ersten Zeichnen setzen: gespeicherte Wahl, sonst die des Systems.
+  (() => {
+    let t = null;
+    try { t = localStorage.getItem("okf-wiki-theme"); } catch (e) { t = null; }
+    if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div>
+      <h1 id="title"></h1>
+      <div class="sub" id="subtitle"></div>
+      <nav class="jump" id="jump" aria-label="Springen zu" hidden></nav>
+    </div>
+    <span class="seg" role="group" aria-label="Darstellung">
+      <button type="button" class="segb" id="th-light" aria-pressed="false">Hell</button><button type="button" class="segb" id="th-dark" aria-pressed="false">Dunkel</button>
+    </span>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Überblick"></section>
+
+  <section class="card pad lern" id="lernpfad" aria-labelledby="lern-h" hidden></section>
+
+  <section class="netz">
+    <div class="card">
+      <div class="controls">
+        <span class="seg" role="group" aria-label="Ansicht">
+          <button type="button" class="segb" id="v-net" aria-pressed="true" title="Kraftbasiertes Layout (Fruchterman-Reingold): Nähe zeigt Verbindung">Netzwerkgraph</button><button type="button" class="segb" id="v-cols" aria-pressed="false" title="Geschichteter Graph: eine Spalte je Art, Kreuzungen minimiert (Sugiyama, Baryzentren)">Schichtengraph</button>
+        </span>
+        <span id="legend" role="group" aria-label="Seitenarten ein- und ausblenden"></span>
+        <span class="seg" id="scope" role="group" hidden></span>
+        <input type="search" id="q" placeholder="Suchen …" aria-label="Seiten suchen">
+        <select id="cat" aria-label="Kategorie hervorheben"></select>
+        <select id="colorby" aria-label="Färben nach"></select>
+        <span class="colorkey" id="colorkey"></span>
+        <span class="edgekey"><svg width="24" height="6" aria-hidden="true"><line x1="0" y1="3" x2="24" y2="3" stroke="currentColor"/></svg>verlinkt
+          <svg width="24" height="6" aria-hidden="true"><line x1="0" y1="3" x2="24" y2="3" stroke="currentColor" stroke-dasharray="3 3"/></svg>zitiert als Quelle</span>
+        <span class="hitcount" id="hits" aria-live="polite"></span>
+      </div>
+      <div class="graphwrap">
+        <div id="cols" class="cols" hidden>
+          <div class="cols-bar">
+            <label class="check" for="onlylinked"><input type="checkbox" id="onlylinked" checked aria-label="Nur verbundene Seiten"> nur Seiten mit Verbindung in eine andere Spalte</label>
+            <label class="check">Reihenfolge
+              <select id="colsort" aria-label="Reihenfolge in den Spalten"><option value="links">nach Verbindungen</option><option value="title">alphabetisch</option></select></label>
+            <span class="note">Zeigen: Vorschau · Klick: ganze Seite in einer Karte, Fäden hervorgehoben · Doppelklick: Leseansicht</span>
+          </div>
+          <div class="cols-scroll"><svg id="colsvg" role="img" aria-label="Seiten nach Art in Spalten, verbunden durch Fäden; alle Seiten auch in der Tabelle unten"></svg></div>
+        </div>
+        <svg id="graph" role="img" aria-label="Netz der Wiki-Seiten; alle Seiten auch in der Tabelle unten"></svg>
+        <div class="zoom">
+          <button class="ghost" type="button" id="zin" aria-label="Vergrößern">+</button>
+          <button class="ghost" type="button" id="zout" aria-label="Verkleinern">−</button>
+          <button class="ghost" type="button" id="zfit">Einpassen</button>
+        </div>
+      </div>
+    </div>
+    <aside class="card panel" id="panel" aria-live="polite"></aside>
+  </section>
+
+  <details class="card fold" id="glosscard" hidden>
+    <summary id="glosssum">Glossar</summary>
+    <div class="pad" id="glossbody"></div>
+  </details>
+
+  <details class="card fold" id="opencard" hidden>
+    <summary id="opensum">Offene Stellen</summary>
+    <div class="pad" id="openbody"></div>
+  </details>
+
+  <details class="card" id="tablecard">
+    <summary id="tablesum">Alle Seiten</summary>
+    <div class="scroll"><table class="pages" id="pages"></table></div>
+  </details>
+
+  <footer id="foot"></footer>
+</main>
+<div id="reader" class="reader" hidden role="dialog" aria-modal="true" aria-labelledby="r-title">
+  <div class="reader-bar">
+    <button class="ghost" type="button" id="r-back" hidden>← Zurück</button>
+    <span class="sp"></span>
+    <button class="btn-primary" type="button" id="r-close">Schließen</button>
+  </div>
+  <article class="r-card" id="r-card"></article>
+</div>
+<div id="tip" role="tooltip"></div>
+<script type="application/json" id="okf-data">__DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const D = JSON.parse(document.getElementById("okf-data").textContent);
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const typeLabels = Object.fromEntries(D.types.map(t => [t.name, t.label]));
+  const tlabel = t => typeLabels[t] || t;
+  const lab = (field, value) => ((D.labels || {})[field] || {})[value] || value;
+  const ACCESS = { citation: "nur Metadaten", abstract: "Abstract", fulltext: "Volltext", originaldokument: "Originaldokument" };
+  const LIC = D.license_classes || {}, RACT = D.rights_actions || {};
+  const RWORD = { ja: "erlaubt", bedingt: "mit Auflage", nein: "nicht erlaubt", fragen: "erst fragen" };
+  const licShort = n => (!n.license ? "" : n.license.cls === "unbekannt" ? "Lizenz unbekannt"
+    : n.license.name && n.license.name.length <= 28 ? n.license.name : n.license.label);
+
+  function h(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === "class") e.className = v;
+      else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v);
+    }
+    for (const c of kids) if (c !== null && c !== undefined && c !== false) e.append(c);
+    return e;
+  }
+  function s(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    return e;
+  }
+
+  // ---------------------------------------------------------------- Daten
+  const nodes = D.nodes;
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  for (const n of nodes) { n.nb = new Set(); n.outs = new Map(); n.ins = new Map(); }
+  const edges = [];
+  for (const e of D.edges) {
+    const a = byId.get(e.s), b = byId.get(e.t);
+    if (!a || !b) continue;
+    edges.push({ s: a, t: b, kind: e.kind });
+    a.nb.add(b); b.nb.add(a);
+    if (!a.outs.has(b)) a.outs.set(b, new Set());
+    a.outs.get(b).add(e.kind);
+    if (!b.ins.has(a)) b.ins.set(a, new Set());
+    b.ins.get(a).add(e.kind);
+  }
+  // Reihenfolge der Arten in Chips, Kacheln, Tabelle, Übersichten und Schichtengraph: von der Grundlage zum
+  // Querschnitt (Quellen, Entitäten, Konzepte, Synthesen, Analysen), weitere Profiltypen danach in der
+  // Reihenfolge der wiki.toml, Typen außerhalb des Profils neben dem Typ ihres Ordners. Nur das Layout des
+  // Netzwerkgraphen folgt weiter der wiki.toml (profileOrder), damit sich sein Bild nicht ändert.
+  const profileOrder = [...D.types.map(t => t.name).filter(t => nodes.some(n => n.type === t)),
+    ...[...new Set(nodes.map(n => n.type))].filter(t => !typeLabels[t]).sort()];
+  const COLORDER = ["source", "entity", "concept", "synthesis", "analysis"];
+  const folderType = Object.fromEntries(D.types.map(t => [t.folder, t.name]));
+  const homeOf = t => { const n = nodes.find(m => m.type === t); return n && folderType[n.id.split("/")[0]]; };
+  const typeOrder = [];
+  for (const t of [...COLORDER, ...profileOrder.filter(x => !COLORDER.includes(x) && typeLabels[x])]) {
+    if (profileOrder.includes(t) && !typeOrder.includes(t)) typeOrder.push(t);
+    for (const x of profileOrder) if (!typeLabels[x] && homeOf(x) === t && !typeOrder.includes(x)) typeOrder.push(x);
+  }
+  for (const x of profileOrder) if (!typeOrder.includes(x)) typeOrder.push(x);
+  const count = f => nodes.filter(f).length;
+  const tally = list => { const m = new Map(); for (const v of list) m.set(v, (m.get(v) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))); };
+  // Lernpfad: Einstiegsseiten ([index] entry_tag) in der Reihenfolge von order, wie „Zuerst lesen“ im Root-Index
+  const PATH = (D.path || []).map(id => byId.get(id)).filter(Boolean);
+  const coll = new Intl.Collator("de", { sensitivity: "base", numeric: true });
+
+  // ---------------------------------------------------------------- Farben (Art oder Umfang)
+  // Vier validierte Farben; die Unterscheidung trägt zusätzlich die Form (Entitäten als Ring) bzw. die Legende.
+  // Themenbereiche und Schlagwörter zeigt das Dashboard nirgends (Wunsch der Person, alle Wikis).
+  const TYPE_SLOT = { source: 1, concept: 2, entity: 3, synthesis: 4 };
+  // Umfang nur anbieten, wenn Seiten ihn tragen; eine Voreinstellung ohne Treffer gilt als „alle“
+  const SC = D.scope && D.scope.values.length && nodes.some(n => n.scope) ? D.scope : null;
+  if (SC && SC.default && !nodes.some(n => n.scope === SC.default)) SC.default = "";
+  const scopeLab = v => ((SC && SC.values.find(x => x[0] === v)) || [v, v])[1];
+  const SCOPE_SLOT = SC ? Object.fromEntries(SC.values.slice(0, 4).map(([v], i) => [v, i + 1])) : {};
+  // Sichtbarkeit ([visibility] in wiki.toml): nur die lokale Ausgabe kennt sie; interne Seiten tragen ein Abzeichen
+  const VIS = D.visibility && nodes.some(n => n.internal) ? D.visibility : null;
+  const visText = n => ((VIS && VIS.values.find(x => x[0] === n.visibility)) || [n.visibility, n.visibility])[1]
+    + (n.visibility_derived ? " (abgeleitet)" : "");
+  const visBadge = n => (VIS && n.internal ? h("span", { class: "tag internal", title: "Fehlt in der öffentlichen Ausgabe" }, visText(n)) : null);
+  let colorBy = "type";
+  function paint(n) {
+    if (colorBy === "scope") {
+      const slot = SCOPE_SLOT[n.scope];
+      return slot ? { color: `var(--c${slot})`, ring: n.scope_derived } : { color: "var(--c-other)", ring: true };
+    }
+    const slot = TYPE_SLOT[n.type];
+    return slot ? { color: `var(--c${slot})`, ring: n.type === "entity" } : { color: "var(--c-other)", ring: true };
+  }
+  function styleDot(el, p) {
+    el.classList.toggle("ring", p.ring);
+    el.style.fill = p.ring ? `color-mix(in srgb, ${p.color} 16%, var(--surface))` : p.color;
+    el.style.stroke = p.ring ? p.color : "";
+  }
+  function dotSvg(p, size = 12) {
+    const sv = s("svg", { width: size, height: size, viewBox: "-6 -6 12 12", "aria-hidden": "true" });
+    const c = s("circle", { r: p.ring ? 4 : 5 });
+    c.style.fill = p.ring ? "none" : p.color;
+    if (p.ring) { c.style.stroke = p.color; c.style.strokeWidth = "2"; }
+    sv.append(c);
+    return sv;
+  }
+  const typeDot = t => dotSvg(TYPE_SLOT[t] ? { color: `var(--c${TYPE_SLOT[t]})`, ring: t === "entity" } : { color: "var(--c-other)", ring: true });
+
+  // ---------------------------------------------------------------- Kopf und Überblick
+  const day = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }); };
+  $("title").replaceChildren(h("span", { class: "hl" }, D.title));
+  const internalCount = VIS ? count(n => n.internal) : 0;
+  $("subtitle").textContent = `${nodes.length} Seiten` + (internalCount ? `, davon ${internalCount} nicht öffentlich` : "") + ` · Stand ${day(D.generated)}`;
+  const srcNodes = nodes.filter(n => n.access);
+  const tiles = [
+    ["Seiten", nodes.length, typeOrder.map(t => `${tlabel(t)} ${count(n => n.type === t)}`).join(" · ")],
+  ];
+  // keine Kacheln für Verbindungen, Quellenlage, Themenbereiche oder Schlagwörter (Wunsch der Person, alle Wikis)
+  const FW = D.fundweg_arten || {};
+  const fwNodes = nodes.filter(n => n.fundweg && n.fundweg.length);
+  if (fwNodes.length) {
+    const model = fwNodes.filter(n => n.fundweg[0].art === "modellvorschlag").length;
+    tiles.push(["Fundweg dokumentiert", fwNodes.length, [`von ${srcNodes.length} Quellen`, `${Math.round(100 * model / fwNodes.length)} % Modellvorschlag`,
+      ...tally(fwNodes.map(n => n.fundweg[0].art)).filter(([a]) => a !== "modellvorschlag").slice(0, 2).map(([a, c]) => `${c} ${FW[a] || a}`)].join(" · ")]);
+  }
+  const licNodes = nodes.filter(n => n.license);
+  if (licNodes.length) {
+    const clear = licNodes.filter(n => n.license.cls !== "unbekannt").length;
+    tiles.push(["Lizenz geklärt", clear, [`von ${licNodes.length} Quellen`, ...tally(licNodes.map(n => n.license.cls)).slice(0, 3).map(([c, k]) => `${k} ${LIC[c] || c}`)].join(" · ")]);
+  }
+  for (const [l, v, sub] of tiles) $("tiles").append(h("div", { class: "card tile" }, h("div", { class: "l" }, l), h("div", { class: "v" }, String(v)), h("div", { class: "s" }, sub)));
+
+  // ---------------------------------------------------------------- Layout (Kräftesimulation, deterministisch)
+  function hash(str) {
+    let x = 2166136261;
+    for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
+    return (x >>> 0) / 4294967296;
+  }
+  // bewusst klein (rund die Hälfte der früheren Größe), damit das Netz lesbar bleibt
+  const radius = n => Math.min(2 + 0.85 * Math.sqrt(n.in), 7.5);
+  let singleTop = null;
+  for (const n of nodes) n.r = radius(n);
+  (function layout() {
+    // Fruchterman-Reingold mit begrenzter Reichweite, schwachem Zug zum Typ-Anker und zur Mitte,
+    // danach Überlappungen auflösen. Startpositionen aus einem Hash der ID: gleiche Daten, gleiches Bild.
+    const N = nodes.length;
+    if (!N) return;
+    const K = 40, CUT2 = (5 * K) * (5 * K);
+    const G = profileOrder.length;
+    const R = G === 1 ? 0 : K * (2 + Math.sqrt(N) * 0.45);
+    const anchor = {};
+    profileOrder.forEach((t, j) => {
+      const a = -Math.PI / 2 + (2 * Math.PI * j) / G;
+      anchor[t] = [R * Math.cos(a), R * Math.sin(a)];
+    });
+    for (const n of nodes) {
+      const [ax, ay] = anchor[n.type];
+      const a = 2 * Math.PI * hash(n.id), r = K * 2 * Math.sqrt(hash(n.id + "#"));
+      n.x = ax + r * Math.cos(a); n.y = ay + r * Math.sin(a);
+    }
+    const pairs = new Map();
+    for (const e of edges) {
+      const key = e.s.id < e.t.id ? e.s.id + "\u0000" + e.t.id : e.t.id + "\u0000" + e.s.id;
+      if (!pairs.has(key)) pairs.set(key, [e.s, e.t]);
+    }
+    const links = [...pairs.values()];
+    let temp = K * 3;
+    for (let it = 0; it < 360; it++) {
+      for (const n of nodes) { n.dx = 0; n.dy = 0; }
+      for (let i = 0; i < N; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < N; j++) {
+          const b = nodes[j];
+          let dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+          if (d2 > CUT2) continue;
+          if (d2 < 0.01) { dx = hash(a.id + b.id) - 0.5; dy = 0.5 - hash(b.id + a.id); d2 = 0.01; }
+          const f = (K * K) / d2;
+          a.dx += dx * f; a.dy += dy * f; b.dx -= dx * f; b.dy -= dy * f;
+        }
+      }
+      for (const [a, b] of links) {
+        const dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        const f = d / K;
+        a.dx -= dx * f; a.dy -= dy * f; b.dx += dx * f; b.dy += dy * f;
+      }
+      for (const n of nodes) {
+        const [ax, ay] = anchor[n.type];
+        n.dx += (ax - n.x) * 0.04 - n.x * 0.015;
+        n.dy += (ay - n.y) * 0.04 - n.y * 0.015;
+        const len = Math.hypot(n.dx, n.dy);
+        if (len > 0) { const m = Math.min(len, temp); n.x += (n.dx / len) * m; n.y += (n.dy / len) * m; }
+      }
+      temp = Math.max(0.6, temp * 0.985);
+    }
+    for (let round = 0; round < 80; round++) {
+      let moved = false;
+      for (let i = 0; i < N; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < N; j++) {
+          const b = nodes[j];
+          const min = a.r + b.r + 6;
+          let dx = a.x - b.x, dy = a.y - b.y;
+          if (Math.abs(dx) > min || Math.abs(dy) > min) continue;
+          let d = Math.sqrt(dx * dx + dy * dy);
+          if (d >= min) continue;
+          if (d < 0.01) { dx = hash(a.id) - 0.5; dy = hash(b.id) - 0.5; d = Math.hypot(dx, dy) || 1; }
+          const push = (min - d) / 2 / d;
+          a.x += dx * push; a.y += dy * push; b.x -= dx * push; b.y -= dy * push;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    packComponents();
+  })();
+
+  // Zusammenhangskomponenten ordnen: größtes Netz, rechts daneben die Inseln, darunter ein Raster
+  // der Seiten ohne jede Verbindung (nach Art und Titel sortiert).
+  function packComponents() {
+    const seen = new Set(), comps = [];
+    for (const n of nodes) {
+      if (seen.has(n)) continue;
+      const c = [], stack = [n];
+      seen.add(n);
+      while (stack.length) {
+        const m = stack.pop();
+        c.push(m);
+        for (const o of m.nb) if (!seen.has(o)) { seen.add(o); stack.push(o); }
+      }
+      comps.push(c);
+    }
+    const box = c => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const n of c) { x0 = Math.min(x0, n.x - n.r); y0 = Math.min(y0, n.y - n.r); x1 = Math.max(x1, n.x + n.r); y1 = Math.max(y1, n.y + n.r); }
+      return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
+    };
+    const shift = (c, dx, dy) => { for (const n of c) { n.x += dx; n.y += dy; } };
+    const multi = comps.filter(c => c.length > 1).sort((a, b) => b.length - a.length);
+    const single = comps.filter(c => c.length === 1).map(c => c[0]);
+    const GAP = 60;
+    let main = multi.length ? box(multi[0]) : { x0: 0, y0: 0, x1: 0, y1: 0, w: 0, h: 0 };
+    if (multi.length) shift(multi[0], -main.x0, -main.y0);
+    main = multi.length ? box(multi[0]) : main;
+    let colX = main.x1 + GAP, colY = 0, colW = 0, bottom = main.y1;
+    const colH = Math.max(main.h, 300);
+    for (const c of multi.slice(1)) {
+      const b = box(c);
+      if (colY > 0 && colY + b.h > colH) { colX += colW + GAP; colY = 0; colW = 0; }
+      shift(c, colX - b.x0, colY - b.y0);
+      colY += b.h + GAP / 2; colW = Math.max(colW, b.w); bottom = Math.max(bottom, colY);
+    }
+    if (single.length) {
+      const order = Object.fromEntries(profileOrder.map((t, i) => [t, i]));
+      single.sort((a, b) => order[a.type] - order[b.type] || a.title.localeCompare(b.title));
+      const cell = 2 * Math.max(...single.map(n => n.r)) + 14;
+      const width = Math.max(main.w, colX + colW, cell * Math.ceil(Math.sqrt(single.length) * 1.6));
+      const perRow = Math.max(1, Math.floor(width / cell));
+      const top = bottom + GAP;
+      single.forEach((n, i) => { n.x = (i % perRow) * cell + cell / 2; n.y = top + Math.floor(i / perRow) * cell + cell / 2; });
+      singleTop = top;
+    }
+  }
+
+  // ---------------------------------------------------------------- Netz zeichnen
+  const svg = $("graph");
+  const vp = s("g");
+  const gE = s("g"), gN = s("g"), gL = s("g");
+  vp.append(gE, gN, gL);
+  svg.append(vp);
+  const isolated = nodes.filter(n => n.nb.size === 0);
+  if (isolated.length && singleTop !== null) {
+    const cap = s("text", { class: "label", x: 0, y: singleTop - 14 });
+    cap.textContent = `Ohne Verbindung: ${isolated.length} Seiten`;
+    gL.append(cap);
+  }
+  for (const e of edges) {
+    e.el = s("line", { class: "edge" + (e.kind === "source" ? " src" : ""), x1: e.s.x, y1: e.s.y, x2: e.t.x, y2: e.t.y });
+    gE.append(e.el);
+  }
+  const byIn = (a, b) => b.in - a.in || a.title.localeCompare(b.title);
+  const hubs = [...nodes].filter(n => n.in > 0).sort(byIn).slice(0, 15);
+  let labelCandidates = hubs;
+  function placeLabels() {
+    const ctm = svg.getScreenCTM();
+    const k = ctm && ctm.a ? ctm.a : 1, fs = 11 / k, placed = [];
+    for (const n of nodes) n.label.style.display = "none";
+    for (const n of labelCandidates) {
+      if (!visible(n)) continue;
+      const w = n.label.textContent.length * fs * 0.58, hh = fs * 1.3;
+      const x = n.x + n.r + 3 / k, y = n.y - hh * 0.65;
+      if (placed.some(q => x < q[2] && x + w > q[0] && y < q[3] && y + hh > q[1])) continue;
+      placed.push([x, y, x + w, y + hh]);
+      n.label.setAttribute("x", x);
+      n.label.setAttribute("y", n.y + fs * 0.35);
+      n.label.style.display = "";
+    }
+  }
+  for (const n of nodes) {
+    n.g = s("g", { class: "node", transform: `translate(${n.x},${n.y})`, tabindex: "0", role: "button", "aria-label": `${n.title} (${tlabel(n.type)})` });
+    n.dot = s("circle", { class: "dot", r: n.r });
+    n.g.append(s("circle", { class: "grab", r: n.r + 5 }), s("circle", { class: "halo", r: n.r + 2.5 }), n.dot);
+    n.g.addEventListener("pointerenter", ev => { if (pinned) return; hoverN = n; showTip(n, ev); update(); });
+    n.g.addEventListener("pointermove", ev => { if (!pinned) moveTip(ev); });
+    n.g.addEventListener("pointerleave", () => { if (pinned) return; hoverN = null; hideTip(); update(); });
+    n.g.addEventListener("click", ev => { ev.stopPropagation(); hoverN = null; select(n); pin(n, ev); });
+    n.g.addEventListener("dblclick", ev => { ev.stopPropagation(); openReader(n, "new"); });
+    n.g.addEventListener("keydown", ev => {
+      if (ev.key === "Enter") { ev.preventDefault(); openReader(n, "new"); }
+      else if (ev.key === " ") { ev.preventDefault(); const r = n.g.getBoundingClientRect(); select(n); pin(n, { clientX: r.right, clientY: r.top }); }
+    });
+    gN.append(n.g);
+    n.label = s("text", { class: "label", x: n.x + n.r + 3, y: n.y + 4 });
+    n.label.textContent = n.title.length > 34 ? n.title.slice(0, 33) + "…" : n.title;
+    gL.append(n.label);
+  }
+  function repaint() { for (const n of nodes) styleDot(n.dot, paint(n)); }
+
+  // Zoom und Verschieben über die viewBox
+  let vb = { x: -100, y: -100, w: 200, h: 200 };
+  function setVB() {
+    svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    const ctm = svg.getScreenCTM();
+    const k = ctm && ctm.a ? ctm.a : 1;
+    gL.setAttribute("font-size", (11 / k).toFixed(2));
+    gL.setAttribute("stroke-width", (3 / k).toFixed(2));
+    placeLabels();
+  }
+  function fit() {
+    const pts = nodes.filter(visible);
+    if (!pts.length) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of pts) { x0 = Math.min(x0, n.x - n.r); y0 = Math.min(y0, n.y - n.r); x1 = Math.max(x1, n.x + n.r); y1 = Math.max(y1, n.y + n.r); }
+    const m = Math.max(30, 0.06 * Math.max(x1 - x0, y1 - y0));
+    vb = { x: x0 - m, y: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
+    setVB();
+  }
+  function toUser(ev) {
+    const p = svg.createSVGPoint();
+    p.x = ev.clientX; p.y = ev.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function zoomAt(px, py, f) {
+    vb.x = px - (px - vb.x) * f; vb.y = py - (py - vb.y) * f; vb.w *= f; vb.h *= f;
+    setVB();
+  }
+  svg.addEventListener("wheel", ev => { ev.preventDefault(); const p = toUser(ev); zoomAt(p.x, p.y, Math.exp(ev.deltaY * 0.0015)); }, { passive: false });
+  let pan = null;
+  svg.addEventListener("pointerdown", ev => {
+    if (ev.target.closest(".node")) return;
+    pan = { x: ev.clientX, y: ev.clientY, vx: vb.x, vy: vb.y, k: svg.getScreenCTM().a, moved: false };
+    svg.setPointerCapture(ev.pointerId);
+    svg.classList.add("panning");
+  });
+  svg.addEventListener("pointermove", ev => {
+    if (!pan) return;
+    const dx = ev.clientX - pan.x, dy = ev.clientY - pan.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true;
+    vb.x = pan.vx - dx / pan.k; vb.y = pan.vy - dy / pan.k;
+    setVB();
+  });
+  svg.addEventListener("pointerup", () => {
+    if (pan && !pan.moved) { selected = null; renderPanel(); update(); }
+    pan = null;
+    svg.classList.remove("panning");
+  });
+  const centre = () => [vb.x + vb.w / 2, vb.y + vb.h / 2];
+  $("zin").addEventListener("click", () => zoomAt(...centre(), 0.75));
+  $("zout").addEventListener("click", () => zoomAt(...centre(), 1 / 0.75));
+  $("zfit").addEventListener("click", () => fit());
+  new ResizeObserver(() => setVB()).observe(svg);
+
+  // ---------------------------------------------------------------- Vorschaukarte
+  const tip = $("tip");
+  let pinned = null;
+  function kindLine(n) {
+    const bits = [h("span", { class: "pill" }, dotSvg(paint(n), 11), tlabel(n.type))];
+    if (n.subtype) bits.push(h("span", {}, lab(n.subfield, n.subtype)));
+    const vb = visBadge(n);
+    if (vb) bits.push(vb);
+    return h("div", { class: "pv-kind" }, ...bits);
+  }
+  function preview(n) {
+    const kids = [kindLine(n), h("div", { class: "pv-title" }, n.title)];
+    if (n.cite) kids.push(h("div", { class: "pv-cite" }, [n.cite, ACCESS[n.access] || n.access, licShort(n)].filter(Boolean).join(" · ")));
+    if (n.description) kids.push(h("p", { class: "pv-desc" }, n.description));
+    if (n.excerpt) kids.push(h("p", { class: "pv-ex" }, n.excerpt));
+    if (n.outline.length) kids.push(h("div", { class: "pv-out" }, "Abschnitte: " + n.outline.join(" · ")));
+    kids.push(h("div", { class: "pv-foot" }, h("span", {}, `${n.nb.size} Verbindungen`), h("span", {}, "Klick: ganze Seite in der Karte")));
+    return kids;
+  }
+  function showTip(n, ev) {
+    tip.classList.remove("pinned");
+    tip.replaceChildren(...preview(n));
+    tip.style.display = "block";
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    const w = tip.offsetWidth, hh = tip.offsetHeight;
+    let x = ev.clientX + 16, y = ev.clientY + 16;
+    if (x + w > innerWidth - 8) x = Math.max(8, ev.clientX - w - 16);
+    if (y + hh > innerHeight - 8) y = Math.max(8, innerHeight - hh - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { if (!pinned) tip.style.display = "none"; }
+  // Angeheftete Karte: die ganze Seite zum Scrollen, Links öffnen die Zielseite in derselben Karte.
+  let pinAt = { clientX: 0, clientY: 0 };
+  function pin(n, ev) {
+    pinned = n;
+    pinScroll = colsScroll.scrollTop;
+    if (ev) pinAt = { clientX: ev.clientX, clientY: ev.clientY };
+    const inner = h("div", { class: "pv-inner" });
+    const go = m => { selected = m; renderPanel(); pin(m); update(); };
+    const goFacet = (k, v) => pin({ facet: [k, v] });
+    if (n.facet) fillFacet(inner, n.facet[0], n.facet[1], true, go);
+    else fillArticle(inner, n, true, go, goFacet);
+    const kind = n.facet ? h("span", {}, facetLabel(...n.facet)[0]) : h("span", { class: "pill" }, dotSvg(paint(n), 11), tlabel(n.type));
+    tip.replaceChildren(
+      h("div", { class: "pv-bar" }, kind, h("span", { class: "sp" }),
+        h("button", { class: "btn-primary", type: "button", onclick: () => openReader(n, "new") }, "Ganze Seite"),
+        h("button", { class: "ghost", type: "button", "aria-label": "Karte schließen", onclick: () => { unpin(); hoverN = null; update(); } }, "×")),
+      inner);
+    tip.classList.add("pinned");
+    tip.style.display = "block";
+    tip.scrollTop = 0;
+    // Im Netz liegt die Karte über der Seitenleiste und ersetzt sie; sonst neben dem Klick.
+    const side = $("panel").getBoundingClientRect();
+    const besides = view === "net" && !document.querySelector(".netz").classList.contains("wide") && side.left > innerWidth / 2;
+    if (besides) {
+      tip.style.left = Math.max(8, side.right - tip.offsetWidth) + "px";
+      tip.style.top = Math.max(8, Math.min(side.top, innerHeight - tip.offsetHeight - 8)) + "px";
+    } else {
+      moveTip(pinAt);
+    }
+  }
+  function unpin() {
+    pinned = null;
+    tip.classList.remove("pinned");
+    tip.style.display = "none";
+  }
+  document.addEventListener("pointerdown", ev => {
+    if (pinned && !tip.contains(ev.target) && !ev.target.closest(".crow")) { unpin(); hoverN = null; update(); }
+  });
+
+  // ---------------------------------------------------------------- Filter
+  const hidden = new Set();
+  let hoverN = null, selected = null, cat = "", query = "";
+  // Umfang ([scope] in wiki.toml): blendet Seiten außerhalb des gewählten Umfangs aus; Wahl bleibt je Wiki gespeichert
+  const scopeKey = `okf-wiki-scope:${D.title}`;
+  let scopeSel = "";
+  if (SC) {
+    let stored = null;
+    try { stored = localStorage.getItem(scopeKey); } catch (e) { /* ohne Speicher */ }
+    scopeSel = stored !== null && (stored === "" || nodes.some(n => n.scope === stored)) ? stored : (SC.default || "");
+  }
+  const inScope = n => !scopeSel || n.scope === scopeSel;
+  const visible = n => !hidden.has(n.type) && inScope(n);
+  let redrawTable = () => {}, redrawGlossary = () => {}, redrawOpen = () => {};
+  (function fillScope() {
+    if (!SC) return;
+    const box = $("scope");
+    box.hidden = false;
+    box.setAttribute("aria-label", `${SC.label} wählen`);
+    const opts = [["", `${SC.label}: alle`], ...SC.values];
+    const btns = opts.map(([v, label]) => {
+      const b = h("button", { type: "button", class: "segb", "aria-pressed": String(v === scopeSel), title: v ? `Nur Seiten mit ${SC.label} ${label}` : "Alle Seiten" }, label);
+      b.addEventListener("click", () => {
+        scopeSel = v;
+        try { localStorage.setItem(scopeKey, v); } catch (e) { /* ohne Speicher */ }
+        for (const [i, x] of btns.entries()) x.setAttribute("aria-pressed", String(opts[i][0] === v));
+        if (selected && !visible(selected)) { selected = null; unpin(); }
+        colsDirty = true; update(); redrawTable(); redrawGlossary(); redrawOpen();
+      });
+      return b;
+    });
+    box.append(...btns);
+  })();
+  function catMatch(n) {
+    if (!cat) return true;
+    const [kind, value] = [cat.slice(0, 1), cat.slice(2)];
+    if (kind === "s") return n.subtype === value;
+    if (kind === "l") return !!n.license && n.license.cls === value;
+    if (kind === "f") return !!n.fundweg.length && n.fundweg[0].art === value;
+    return true;
+  }
+  const qmatch = n => !query || [n.title, n.description, n.excerpt, n.cite, ...n.aliases, ...n.tags, ...n.domain].some(x => (x || "").toLowerCase().includes(query));
+  for (const t of typeOrder) {
+    const nT = count(n => n.type === t);
+    const b = h("button", { class: "chip", type: "button", "aria-pressed": "true", "aria-label": `${tlabel(t)} (${nT}) ein- oder ausblenden` },
+      typeDot(t), h("span", { class: "lab" }, tlabel(t)), h("span", { class: "n" }, String(nT)));
+    b.addEventListener("click", () => {
+      if (hidden.has(t)) hidden.delete(t); else hidden.add(t);
+      colsDirty = true;
+      b.setAttribute("aria-pressed", hidden.has(t) ? "false" : "true");
+      update();
+    });
+    $("legend").append(b, " ");
+  }
+  // Kategorie-Auswahl: Unterart, Lizenz, Fundweg (keine Themenbereiche, keine Schlagwörter)
+  (function fillCat() {
+    const sel = $("cat");
+    sel.append(h("option", { value: "" }, "Kategorie: alle"));
+    const subs = tally(nodes.filter(n => n.subtype).map(n => `${n.subfield}\u0000${n.subtype}`));
+    if (subs.length) {
+      const g = h("optgroup", { label: "Unterart" });
+      for (const [key, c] of subs) { const [f, v] = key.split("\u0000"); g.append(h("option", { value: `s:${v}` }, `${lab(f, v)} (${c})`)); }
+      sel.append(g);
+    }
+    if (licNodes.length) {
+      const g = h("optgroup", { label: "Lizenz" });
+      const byCls = new Map(tally(licNodes.map(n => n.license.cls)));
+      for (const c of Object.keys(LIC)) if (byCls.has(c)) g.append(h("option", { value: `l:${c}` }, `${LIC[c]} (${byCls.get(c)})`));
+      sel.append(g);
+    }
+    if (fwNodes.length) {
+      const g = h("optgroup", { label: "Fundweg" });
+      for (const [a, c] of tally(fwNodes.map(n => n.fundweg[0].art))) g.append(h("option", { value: `f:${a}` }, `${FW[a] || a} (${c})`));
+      sel.append(g);
+    }
+    sel.hidden = sel.options.length < 2;
+  })();
+  function setCat(value) {
+    cat = value;
+    $("cat").value = value;
+    update();
+  }
+  $("cat").addEventListener("change", ev => setCat(ev.target.value));
+  $("q").addEventListener("input", ev => { query = ev.target.value.trim().toLowerCase(); update(); });
+  // Färben nach Art oder Umfang
+  (function fillColorBy() {
+    const sel = $("colorby");
+    sel.append(h("option", { value: "type" }, "Farbe: Art"));
+    if (SC) sel.append(h("option", { value: "scope" }, `Farbe: ${SC.label}`));
+    sel.hidden = !SC;
+    sel.addEventListener("change", ev => { colorBy = ev.target.value; repaint(); colorKey(); colsDirty = true; update(); });
+  })();
+  function colorKey() {
+    const box = $("colorkey");
+    box.replaceChildren();
+    if (colorBy === "scope") {
+      for (const [v, label] of SC.values.slice(0, 4)) box.append(h("span", {}, dotSvg({ color: `var(--c${SCOPE_SLOT[v]})`, ring: false }), label));
+      box.append(h("span", {}, dotSvg({ color: "var(--c1)", ring: true }), "Ring: von zitierenden Seiten abgeleitet"));
+    }
+  }
+
+  function update() {
+    const focus = hoverN || selected;
+    const filtering = !!(cat || query);
+    const hits = filtering ? new Set(nodes.filter(n => visible(n) && catMatch(n) && qmatch(n))) : null;
+    for (const n of nodes) {
+      const vis = visible(n);
+      n.g.style.display = vis ? "" : "none";
+      let dim = false;
+      if (focus) dim = !(n === focus || focus.nb.has(n));
+      else if (hits) dim = !hits.has(n);
+      n.g.classList.toggle("dim", dim);
+      n.g.classList.toggle("hit", !!hits && hits.has(n) && !focus);
+      n.g.classList.toggle("sel", n === selected);
+    }
+    if (focus) labelCandidates = [focus, ...[...focus.nb].sort(byIn)];
+    else if (hits) labelCandidates = [...hits].sort(byIn).slice(0, 40);
+    else labelCandidates = hubs;
+    placeLabels();
+    for (const e of edges) {
+      const vis = visible(e.s) && visible(e.t);
+      e.el.style.display = vis ? "" : "none";
+      const on = !!focus && (e.s === focus || e.t === focus);
+      e.el.classList.toggle("hi", on);
+      e.el.classList.toggle("dim", focus ? !on : !!hits && !(hits.has(e.s) && hits.has(e.t)));
+    }
+    $("hits").textContent = hits ? `${hits.size} Treffer` : "";
+    if (view === "cols") {
+      if (colsDirty) { buildCols(); colsDirty = false; }
+      updateCols(focus, hits);
+    }
+  }
+
+  // ---------------------------------------------------------------- Spaltenansicht (Crosswalk)
+  // Spalten von der Grundlage zum Querschnitt (typeOrder); je Zeile eine Seite mit Titel und Anriss,
+  // Fäden zwischen Seiten verschiedener Arten.
+  const colTypes = typeOrder;
+  const colsvg = $("colsvg");
+  let view = "net", colsDirty = true, colThreads = [];
+  const secondLine = n => {
+    if (n.cite) return [n.cite, n.subtype ? lab(n.subfield, n.subtype) : ""].filter(Boolean).join(" · ");
+    return n.description || n.excerpt || (n.subtype ? lab(n.subfield, n.subtype) : "");
+  };
+  const clip = (text, max) => (text.length > max ? text.slice(0, max - 1) + "…" : text);
+  function buildCols() {
+    colsvg.replaceChildren();
+    for (const n of nodes) n.crow = null;
+    const types = colTypes.filter(t => !hidden.has(t));
+    const colOf = t => types.indexOf(t);
+    const pairs = new Map();
+    for (const e of edges) {
+      const a = colOf(e.s.type), b = colOf(e.t.type);
+      if (a < 0 || b < 0 || a === b || !inScope(e.s) || !inScope(e.t)) continue;
+      const [l, r] = a < b ? [e.s, e.t] : [e.t, e.s];
+      const key = l.id + "\u0000" + r.id;
+      if (!pairs.has(key)) pairs.set(key, { l, r, kinds: new Set() });
+      pairs.get(key).kinds.add(e.kind);
+    }
+    const linked = new Set();
+    for (const q of pairs.values()) { linked.add(q.l); linked.add(q.r); }
+    const only = $("onlylinked").checked;
+    const cols = types.map(t => nodes.filter(n => n.type === t && inScope(n) && (!only || linked.has(n))));
+    cols.forEach(c => c.sort((a, b) => a.title.localeCompare(b.title)));
+    if ($("colsort").value === "links") {
+      // Kreuzungen verringern: jede Spalte nach dem Mittel der Positionen ihrer Nachbarn ordnen (Baryzentren)
+      const nbrs = new Map(nodes.map(n => [n, []]));
+      for (const q of pairs.values()) { nbrs.get(q.l).push(q.r); nbrs.get(q.r).push(q.l); }
+      const pos = new Map();
+      const place = c => c.forEach((n, i) => pos.set(n, c.length > 1 ? i / (c.length - 1) : 0.5));
+      cols.forEach(place);
+      for (let round = 0; round < 8; round++) {
+        const order = round % 2 ? [...cols.keys()].reverse() : [...cols.keys()];
+        for (const ci of order) {
+          const bary = new Map(cols[ci].map(n => {
+            const ns = nbrs.get(n).filter(m => pos.has(m));
+            return [n, ns.length ? ns.reduce((sum, m) => sum + pos.get(m), 0) / ns.length : pos.get(n)];
+          }));
+          cols[ci].sort((a, b) => bary.get(a) - bary.get(b) || a.title.localeCompare(b.title));
+          place(cols[ci]);
+        }
+      }
+    }
+    const k = types.length, avail = Math.max(320, colsvg.parentElement.clientWidth - 8);
+    const GAP = k > 1 ? Math.max(56, Math.min(120, avail * 0.06)) : 0;
+    const colW = Math.max(190, k ? (avail - 24 - GAP * (k - 1)) / k : avail);
+    const ROW = 44, HEAD = 46, PADX = 12;
+    const height = HEAD + Math.max(1, ...cols.map(c => c.length)) * ROW + 16;
+    const width = PADX * 2 + k * colW + Math.max(0, k - 1) * GAP;
+    colsvg.setAttribute("width", Math.round(width));
+    colsvg.setAttribute("height", Math.round(height));
+    colsvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    const gT = s("g"), gR = s("g"), gH = s("g");
+    colsvg.append(gT, gR, gH);
+    const max1 = Math.max(8, Math.floor((colW - 34) / 7.2)), max2 = Math.max(8, Math.floor((colW - 34) / 6.1));
+    cols.forEach((c, ci) => {
+      const x = PADX + ci * (colW + GAP), t = types[ci];
+      const sw = typeDot(t);
+      sw.setAttribute("x", x + 3);
+      sw.setAttribute("y", HEAD / 2 - 6);
+      const head = s("text", { x: x + 22, y: HEAD / 2 + 5, class: "chead" });
+      head.textContent = `${tlabel(t)} (${c.length})`;
+      gH.append(sw, head);
+      c.forEach((n, i) => {
+        const y = HEAD + i * ROW;
+        n.cy = y + ROW / 2; n.cxL = x; n.cxR = x + colW;
+        const g = s("g", { class: "crow", transform: `translate(${x},${y})`, tabindex: "0", role: "button", "aria-label": `${n.title} (${tlabel(n.type)})` });
+        const dot = s("circle", { class: "dot", cx: 12, cy: 15, r: 4.5 });
+        styleDot(dot, paint(n));
+        const t1 = s("text", { class: "t1", x: 24, y: 19 });
+        t1.textContent = clip(n.title, max1);
+        const t2 = s("text", { class: "t2", x: 24, y: 34 });
+        t2.textContent = clip(secondLine(n), max2);
+        g.append(s("rect", { class: "bg", x: 0, y: 2, width: colW, height: ROW - 4, rx: 7 }), dot, t1, t2);
+        g.addEventListener("pointerenter", ev => { if (pinned) return; hoverN = n; showTip(n, ev); update(); });
+        g.addEventListener("pointermove", ev => { if (!pinned) moveTip(ev); });
+        g.addEventListener("pointerleave", () => { if (pinned) return; hoverN = null; hideTip(); update(); });
+        g.addEventListener("click", ev => { hoverN = null; selected = n; renderPanel(); pin(n, ev); update(); });
+        g.addEventListener("dblclick", () => { unpin(); openReader(n, "new"); });
+        g.addEventListener("keydown", ev => {
+          if (ev.key === "Enter") { ev.preventDefault(); openReader(n, "new"); }
+          else if (ev.key === " ") { ev.preventDefault(); const r = g.getBoundingClientRect(); selected = n; renderPanel(); pin(n, { clientX: r.right, clientY: r.top }); update(); }
+        });
+        n.crow = g;
+        gR.append(g);
+      });
+    });
+    colThreads = [];
+    for (const q of pairs.values()) {
+      if (!q.l.crow || !q.r.crow) continue;
+      const x1 = q.l.cxR, y1 = q.l.cy, x2 = q.r.cxL, y2 = q.r.cy, dx = Math.max(40, (x2 - x1) * 0.45);
+      const el = s("path", { class: "cthread" + (q.kinds.has("link") ? "" : " src"), d: `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}` });
+      gT.append(el);
+      colThreads.push({ l: q.l, r: q.r, el });
+    }
+    colThreads.gT = gT;
+  }
+  function updateCols(focus, hits) {
+    for (const n of nodes) {
+      if (!n.crow) continue;
+      let dim = false;
+      if (focus) dim = !(n === focus || focus.nb.has(n));
+      else if (hits) dim = !hits.has(n);
+      n.crow.classList.toggle("dim", dim);
+      n.crow.classList.toggle("hit", !!hits && hits.has(n) && !focus);
+      n.crow.classList.toggle("sel", n === selected);
+    }
+    for (const t of colThreads) {
+      const on = !!focus && (t.l === focus || t.r === focus);
+      t.el.classList.toggle("hi", on);
+      t.el.classList.toggle("dim", focus ? !on : !!hits && !(hits.has(t.l) && hits.has(t.r)));
+      if (on) colThreads.gT.append(t.el);
+    }
+  }
+  function setView(v) {
+    view = v;
+    unpin();
+    $("v-net").setAttribute("aria-pressed", String(v === "net"));
+    $("v-cols").setAttribute("aria-pressed", String(v === "cols"));
+    $("graph").style.display = v === "net" ? "" : "none";
+    document.querySelector(".zoom").style.display = v === "net" ? "" : "none";
+    $("cols").hidden = v !== "cols";
+    document.querySelector(".netz").classList.toggle("wide", v === "cols");
+    colsDirty = true;
+    update();
+    if (v === "net") setVB();
+    try { localStorage.setItem("okf-wiki-view", v); } catch (e) { /* ohne Speicher */ }
+  }
+  $("v-net").addEventListener("click", () => setView("net"));
+  $("v-cols").addEventListener("click", () => setView("cols"));
+  $("onlylinked").addEventListener("change", () => { colsDirty = true; update(); });
+  $("colsort").addEventListener("change", () => { colsDirty = true; update(); });
+  let colsWidth = 0;
+  new ResizeObserver(entries => {
+    const w = Math.round(entries[0].contentRect.width);
+    if (view === "cols" && w && Math.abs(w - colsWidth) > 40) { colsWidth = w; colsDirty = true; update(); }
+  }).observe(colsvg.parentElement);
+  // Angeheftete Vorschau schließt erst, wenn deutlich weitergescrollt wird.
+  const colsScroll = $("cols").querySelector(".cols-scroll");
+  let pinScroll = 0;
+  colsScroll.addEventListener("scroll", () => { if (pinned && Math.abs(colsScroll.scrollTop - pinScroll) > 160) unpin(); });
+
+  // ---------------------------------------------------------------- Seitenleiste
+  function select(n, recentre) {
+    selected = n;
+    renderPanel();
+    update();
+    if (recentre) { vb.x = n.x - vb.w / 2; vb.y = n.y - vb.h / 2; setVB(); }
+    if (view === "cols" && n.crow && recentre) n.crow.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+  function linkList(title, map) {
+    const items = [...map.keys()].sort((a, b) => a.title.localeCompare(b.title));
+    if (!items.length) return null;
+    const wrap = h("details", { class: "links" }, h("summary", {}, `${title} (${items.length})`));
+    const ul = h("ul", { class: "list" });
+    for (const m of items) ul.append(h("li", {}, h("button", { type: "button", onclick: () => select(m, true) }, dotSvg(paint(m), 11), m.title)));
+    wrap.append(ul);
+    return wrap;
+  }
+  function renderPanel() {
+    const p = $("panel");
+    p.replaceChildren();
+    const n = selected;
+    if (!n) {
+      p.append(h("h2", {}, "Erkunden"),
+        h("p", { class: "empty" }, "Über eine Seite fahren zeigt eine Vorschau. Ein Klick öffnet die ganze Seite in einer Karte zum Scrollen, ein Doppelklick in der Leseansicht."));
+      const top = [...nodes].sort(byIn).slice(0, 10).filter(m => m.in > 0);
+      if (top.length) {
+        p.append(h("h3", {}, "Zentrale Seiten"));
+        const ul = h("ul", { class: "list" });
+        for (const m of top) ul.append(h("li", {}, h("button", { type: "button", onclick: () => select(m, true) }, dotSvg(paint(m), 11), m.title)));
+        p.append(ul);
+      }
+      return;
+    }
+    p.append(kindLine(n), h("h2", { style: "margin-top:6px" }, n.title));
+    if (n.cite) p.append(h("div", { class: "meta" }, n.cite + (n.access ? ` · ${ACCESS[n.access] || n.access}` : "")));
+    if (n.description) p.append(h("p", { class: "desc" }, n.description));
+    if (n.excerpt) p.append(h("p", { class: "excerpt" }, n.excerpt));
+    p.append(h("div", { class: "meta" }, h("button", { class: "btn-primary", type: "button", onclick: () => openReader(n, "new") }, "Seite lesen")));
+    if (n.outline.length) p.append(h("div", { class: "note" }, "Abschnitte: " + n.outline.join(" · ")));
+    for (const el of [linkList("Verweist auf", n.outs), linkList("Verlinkt von", n.ins)]) if (el) p.append(el);
+  }
+
+  // ---------------------------------------------------------------- Leseansicht
+  const reader = $("reader"), rHist = [];
+  let rCur = null;
+  function relatedDetails(title, map, go) {
+    const items = [...map.keys()].sort((a, b) => a.title.localeCompare(b.title));
+    const d = h("details", {}, h("summary", {}, `${title} (${items.length})`));
+    const ul = h("ul", { class: "list" });
+    for (const m of items) ul.append(h("li", {}, h("button", { type: "button", onclick: () => go(m) }, dotSvg(paint(m), 11), m.title)));
+    d.append(ul);
+    return d;
+  }
+  const slug = n => n.id.split("/").pop();
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = h("textarea", { "aria-hidden": "true" });
+      ta.value = text;
+      document.body.append(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = "Kopiert";
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  }
+  function download(name, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/x-research-info-systems;charset=utf-8" }));
+    const a = h("a", { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  // Nutzungsrechte als Tabelle: Was will ich tun – darf ich das – unter welcher Auflage.
+  function rightsTable(rows) {
+    const tb = h("tbody");
+    for (const [a, v, note] of rows) tb.append(h("tr", {}, h("th", { scope: "row" }, RACT[a] || a),
+      h("td", {}, h("span", { class: `right r-${v}` }, RWORD[v] || v)), h("td", { class: "r-note" }, note || "")));
+    return h("table", { class: "rights" }, tb);
+  }
+  // Übersichtsseiten für Unterart (s), Lizenzklasse (l) und Fundweg (f).
+  function facetLabel(kind, value) {
+    if (kind === "l") return ["Lizenz", LIC[value] || value];
+    if (kind === "f") return ["Fundweg", FW[value] || value];
+    const any = nodes.find(m => m.subtype === value);
+    return ["Unterart", any ? lab(any.subfield, value) : value];
+  }
+  const facetMatch = (kind, value) => n => (kind === "l" ? !!n.license && n.license.cls === value
+    : kind === "f" ? !!n.fundweg.length && n.fundweg[0].art === value : n.subtype === value);
+  function fillFacet(root, kind, value, compact, go) {
+    const [kicker, label] = facetLabel(kind, value);
+    const members = nodes.filter(facetMatch(kind, value));
+    root.append(h("header", { class: "r-head" }, h("div", { class: "r-kicker" }, kicker),
+      h("h1", compact ? {} : { id: "r-title" }, label), h("p", { class: "r-desc" }, `${members.length} ${members.length === 1 ? "Seite" : "Seiten"}`)));
+    if (kind === "l" && (D.rights_matrix || {})[value]) {
+      root.append(h("section", { class: "r-section" }, h("h2", {}, "Was diese Lizenz erlaubt"), rightsTable(D.rights_matrix[value]),
+        h("p", { class: "r-note" }, "Einzelne Quellen können abweichen, etwa mit einer Genehmigung; maßgeblich ist die Quellenkarte.")));
+    }
+    for (const t of typeOrder) {
+      const ms = members.filter(m => m.type === t).sort((a, b) => a.title.localeCompare(b.title));
+      if (!ms.length) continue;
+      const ul = h("ul", { class: "facet-list" });
+      for (const m of ms) {
+        const sub = [m.cite, kind === "l" && m.license ? m.license.name : "", m.description].filter(Boolean).join(" · ");
+        ul.append(h("li", {}, h("button", { class: "linkish", type: "button", onclick: () => go(m) }, m.title), sub ? h("div", { class: "fl-sub" }, sub) : null));
+      }
+      root.append(h("section", { class: "r-section" }, h("h2", { class: "pill" }, typeDot(t), `${tlabel(t)} (${ms.length})`), ul));
+    }
+    root.append(h("div", { class: "r-actions" }, h("button", { class: "ghost", type: "button", onclick: () => {
+      closeReader(); unpin(); hoverN = null; setCat(`${kind}:${value}`);
+      document.querySelector(".netz").scrollIntoView({ behavior: "smooth", block: "start" });
+    } }, "Im Graphen hervorheben")));
+  }
+  // Seiteninhalt für Leseansicht und angeheftete Karte: Kopf, Text mit APA-Belegen, Literatur, Verknüpfungen.
+  // go(m) öffnet eine verlinkte Seite, goFacet(kind, value) eine Übersichtsseite im selben Behälter.
+  function fillArticle(root, n, compact, go, goFacet) {
+    if (!compact) {
+      root.append(h("nav", { class: "crumb", "aria-label": "Pfad" }, D.title, h("span", { "aria-hidden": "true" }, "›"),
+        h("span", { class: "pill" }, dotSvg(paint(n), 11), tlabel(n.type))));
+    }
+    const step = PATH.indexOf(n);
+    const stepBtn = (m, text, label) => h("button", { class: "ghost", type: "button", "aria-label": label, title: m.title, onclick: () => go(m) }, text);
+    const head = h("header", { class: "r-head" },
+      step >= 0 ? h("div", { class: "r-path" }, h("span", { class: "step-n", "aria-hidden": "true" }, String(step + 1)),
+        h("span", {}, `Lernpfad · Schritt ${step + 1} von ${PATH.length}`),
+        step > 0 ? stepBtn(PATH[step - 1], "‹", `Zurück zu Schritt ${step}`) : null,
+        step < PATH.length - 1 ? stepBtn(PATH[step + 1], "›", `Weiter mit Schritt ${step + 2}`) : null) : null,
+      n.cite ? h("div", { class: "r-kicker" }, n.cite) : null,
+      h("h1", compact ? {} : { id: "r-title" }, n.heading || n.title));
+    const body = h("div", { class: "prose-content" });
+    body.innerHTML = n.html; // im Kern aus Markdown erzeugt; rohes HTML der Seiten ist dort bereits maskiert
+    const firstP = body.querySelector(":scope > p");
+    if (n.description && !(firstP && firstP.textContent.trim() === n.description.trim())) head.append(h("p", { class: "r-desc" }, n.description));
+    const facetBtn = (kind, value, text) => h("button", { class: "metalink", type: "button", title: `Alle Seiten: ${text}`, onclick: () => goFacet(kind, value) }, text);
+    const meta = [visBadge(n), n.subtype ? facetBtn("s", n.subtype, lab(n.subfield, n.subtype)) : null,
+      n.updated ? h("span", {}, `Stand ${day(n.updated)}`) : null].filter(Boolean);
+    if (meta.length) head.append(h("div", { class: "r-meta" }, ...meta));
+    root.append(head, body);
+    if (step >= 0) {
+      // weiter/zurück im Lernpfad direkt nach dem Text, vor Literatur und Verknüpfungen
+      const prev = PATH[step - 1], next = PATH[step + 1];
+      const big = (m, cls, label) => h("button", { class: cls, type: "button", onclick: () => go(m) },
+        h("span", { class: "lbl" }, label), h("span", { class: "ttl" }, m.title));
+      root.append(h("nav", { class: "r-pathnav", "aria-label": "Lernpfad" },
+        prev ? big(prev, "prev", `← Schritt ${step}`) : null,
+        next ? big(next, "next", `Schritt ${step + 2} →`) : h("span", { class: "end" }, "Ende des Lernpfads")));
+    }
+    root.addEventListener("click", ev => {
+      const a = ev.target.closest("a");
+      if (!a || !root.contains(a)) return;
+      const href = a.getAttribute("href") || "";
+      if (a.dataset.page) { ev.preventDefault(); const m = byId.get(a.dataset.page); if (m) go(m); }
+      else if (a.classList.contains("missing")) ev.preventDefault();
+      else if (href.startsWith("#")) {
+        ev.preventDefault();
+        const id = decodeURIComponent(href.slice(1));
+        const t = [...root.querySelectorAll("[id]")].find(x => x.id === id); // nur in diesem Behälter suchen
+        if (t) t.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    });
+    if (n.refs.length) {
+      const ol = h("ol", { class: "lit" });
+      for (const r of n.refs) {
+        const li = h("li", { id: r.key ? `lit-${r.key}` : "" });
+        const entry = h("span", { class: "lit-entry" });
+        entry.innerHTML = r.entry; // APA-Angabe aus citeproc (pandoc), Titel und Namen dort maskiert
+        for (const a of entry.querySelectorAll("a")) { a.target = "_blank"; a.rel = "noopener"; }
+        li.append(entry);
+        const metaEl = h("span", { class: "lit-meta" });
+        if (r.access) metaEl.append(h("span", { class: "tag" + (r.access === "citation" ? " citation" : "") }, ACCESS[r.access] || r.access));
+        const m = r.page ? byId.get(r.page) : null;
+        if (m) metaEl.append(h("button", { class: "linkish", type: "button", onclick: () => go(m) }, "Quellenkarte"));
+        li.append(metaEl);
+        ol.append(li);
+      }
+      const ris = n.refs.map(r => (r.page && byId.get(r.page) ? byId.get(r.page).ris : "")).filter(Boolean).join("");
+      root.append(h("section", { class: "r-section" }, h("h2", {}, "Literatur"), ol,
+        ris ? h("div", { class: "r-actions" }, h("button", { class: "ghost", type: "button", onclick: () => download(`${slug(n)}-literatur.ris`, ris) }, "Literatur als RIS")) : null));
+    }
+    if (n.fundweg.length) {
+      // Quellenkarte: wie die Quelle gefunden wurde (Suche mit Suchstring, Modellvorschlag, Zitatverfolgung …)
+      const items = n.fundweg.map(f => {
+        const von = f.von ? byId.get(`${(n.id.split("/")[0])}/${f.von}`) : null;
+        return h("li", {}, facetBtn("f", f.art, FW[f.art] || f.art),
+          f.db ? ` in ${f.db}` : "", f.query ? h("span", {}, ": ", h("code", {}, f.query)) : "",
+          von ? h("span", {}, " aus ", h("button", { class: "linkish", type: "button", onclick: () => go(von) }, von.cite || von.title)) : (f.von ? ` aus ${f.von}` : ""),
+          f.at ? h("span", { class: "r-note" }, ` · ${day(f.at)}`) : "");
+      });
+      root.append(h("section", { class: "r-section" }, h("h2", {}, "Fundweg"), h("ul", { class: "fundweg" }, ...items)));
+    }
+    if (n.license) {
+      // Quellenkarte: welche Lizenz, wo der Volltext liegt, was damit erlaubt ist
+      const L = n.license;
+      const unknown = L.cls === "unbekannt" && L.known;
+      const text = unknown ? "unbekannt" : L.name || L.url || "nicht angegeben";
+      const name = L.url ? h("a", { href: L.url, target: "_blank", rel: "noopener" }, text) : h("span", {}, text);
+      const same = unknown || (L.name || "").trim().toLowerCase() === L.label.toLowerCase();
+      const lines = [h("p", { class: "r-lic" }, "Lizenz: ", name, " · ", facetBtn("l", L.cls, same ? "weitere Quellen mit dieser Lizenz" : L.label))];
+      for (const st of n.stored) lines.push(h("p", { class: "r-lic" }, `Volltext: ${st.path} `, h("span", { class: "r-note" }, st.tracked ? "(von Git versioniert)" : "(lokal, nicht versioniert)")));
+      // eingeklappt; die Lizenz steht in der Zeile zum Aufklappen
+      const fold = h("details", { class: "r-fold" }, h("summary", {}, h("h2", {}, "Lizenz und Nutzungsrechte"),
+        h("span", { class: "r-note" }, ` · ${licShort(n)}`)), ...lines, rightsTable(n.rights));
+      root.append(h("section", { class: "r-section" }, fold));
+    }
+    if (n.apa) {
+      // Quellenkarte: Literaturangabe (Vollbeleg) unten, zum Kopieren und als RIS für Literaturverwaltungen
+      const entry = h("div", { class: "r-apa" });
+      entry.innerHTML = n.apa; // APA-Angabe aus citeproc (pandoc), Titel und Namen dort maskiert
+      for (const a of entry.querySelectorAll("a")) { a.target = "_blank"; a.rel = "noopener"; }
+      const copy = h("button", { class: "ghost", type: "button" }, "Kopieren");
+      copy.addEventListener("click", () => copyText(entry.textContent.replace(/\s+/g, " ").trim(), copy));
+      root.append(h("section", { class: "r-section", "aria-label": "Literaturangabe" }, entry,
+        h("div", { class: "r-actions" }, copy,
+          n.ris ? h("button", { class: "ghost", type: "button", onclick: () => download(`${slug(n)}.ris`, n.ris) }, "RIS herunterladen") : null)));
+    }
+    const refPages = new Set(n.refs.map(r => r.page).filter(Boolean));
+    const outs = new Map([...n.outs].filter(([m]) => !refPages.has(m.id)));
+    root.append(h("section", { class: "r-section" }, relatedDetails("Verweist auf", outs, go), relatedDetails("Verlinkt von", n.ins, go)));
+  }
+  // item ist eine Seite oder { facet: [kind, value] } für eine Übersichtsseite; anchor springt zu einer Stelle (offen-N)
+  function openReader(item, how, anchor) {
+    if (how === "link" && rCur && rCur !== item) rHist.push(rCur);
+    if (how === "new") rHist.length = 0;
+    rCur = item;
+    unpin();
+    hideTip();
+    const card = $("r-card");
+    card.replaceChildren();
+    const go = m => openReader(m, "link"), goFacet = (k, v) => openReader({ facet: [k, v] }, "link");
+    if (item.facet) fillFacet(card, item.facet[0], item.facet[1], false, go);
+    else fillArticle(card, item, false, go, goFacet);
+    reader.hidden = false;
+    document.body.classList.add("reading");
+    reader.scrollTop = 0;
+    $("r-back").hidden = !rHist.length; // nur nach einem Link zu einer anderen Seite
+    $("r-close").focus({ preventScroll: true });
+    const spot = anchor ? [...card.querySelectorAll("[id]")].find(x => x.id === anchor) : null;
+    if (spot) { spot.scrollIntoView({ block: "center" }); spot.classList.add("flash"); }
+  }
+  function closeReader() {
+    if (reader.hidden) return;
+    reader.hidden = true;
+    document.body.classList.remove("reading");
+    const n = rCur;
+    rCur = null;
+    rHist.length = 0;
+    if (n && !n.facet) select(n, true);
+  }
+  $("r-close").addEventListener("click", () => closeReader());
+  $("r-back").addEventListener("click", () => { const prev = rHist.pop(); if (prev) openReader(prev, "back"); });
+  document.addEventListener("keydown", ev => {
+    if (ev.key !== "Escape") return;
+    if (!reader.hidden) closeReader();
+    else if (pinned) { unpin(); hoverN = null; update(); }
+  });
+
+  // ---------------------------------------------------------------- Tabelle
+  (function pages() {
+    const t = $("pages");
+    $("tablesum").textContent = `Alle Seiten (${nodes.length})`;
+    const cols = [
+      // viertes Feld: Sortierschlüssel, wenn er von der Anzeige abweicht (Art in der Reihenfolge der Spalten)
+      ["Titel", n => n.title, false], ["Art", n => tlabel(n.type), false, n => typeOrder.indexOf(n.type)],
+      ["Unterart", n => (n.subtype ? lab(n.subfield, n.subtype) : ""), false],
+      ...(SC ? [[SC.label, n => (n.scope ? scopeLab(n.scope) + (n.scope_derived ? " (abgeleitet)" : "") : ""), false]] : []),
+      ...(VIS ? [[VIS.label, n => (n.visibility ? visText(n) : ""), false]] : []),
+      ...(licNodes.length ? [["Lizenz", n => licShort(n), false]] : []),
+      ["Verbindungen", n => n.nb.size, true],
+    ];
+    let sortCol = cols.length - 1, dir = -1;
+    const thead = h("thead"), tbody = h("tbody");
+    t.append(thead, tbody);
+    function draw() {
+      const tr = h("tr");
+      cols.forEach(([name, , num], i) => {
+        const th = h("th", { class: num ? "num" : "", scope: "col", tabindex: "0" }, name);
+        if (i === sortCol) th.setAttribute("aria-sort", dir > 0 ? "ascending" : "descending");
+        const act = () => { if (sortCol === i) dir = -dir; else { sortCol = i; dir = num ? -1 : 1; } draw(); };
+        th.addEventListener("click", act);
+        th.addEventListener("keydown", ev => { if (ev.key === "Enter") act(); });
+        tr.append(th);
+      });
+      tr.append(h("th", { scope: "col" }, ""));
+      thead.replaceChildren(tr);
+      const get = cols[sortCol][3] || cols[sortCol][1];
+      const shown = nodes.filter(inScope);
+      $("tablesum").textContent = shown.length === nodes.length ? `Alle Seiten (${nodes.length})` : `Seiten im gewählten ${SC.label} (${shown.length} von ${nodes.length})`;
+      const rows = shown.sort((a, b) => { const x = get(a), y = get(b); return (typeof x === "number" ? x - y : String(x).localeCompare(String(y))) * dir || a.title.localeCompare(b.title); });
+      tbody.replaceChildren(...rows.map(n => h("tr", { onclick: () => { select(n, true); document.querySelector(".netz").scrollIntoView({ behavior: "smooth", block: "start" }); } },
+        h("td", {}, h("span", { class: "pill" }, dotSvg(paint(n), 11), n.title), n.description ? h("div", { class: "d" }, n.description) : null),
+        ...cols.slice(1).map(([, f, num]) => h("td", { class: num ? "num" : "" }, String(f(n) ?? ""))),
+        h("td", {}, h("button", { class: "ghost", type: "button", onclick: ev => { ev.stopPropagation(); openReader(n, "new"); } }, "Lesen")))));
+    }
+    draw();
+    redrawTable = draw;
+  })();
+
+  // ---------------------------------------------------------------- Lernpfad
+  (function learningPath() {
+    if (!PATH.length) return;
+    const ol = h("ol", { class: "steps" });
+    PATH.forEach((n, i) => ol.append(h("li", { class: "step", onclick: () => openReader(n, "new") },
+      h("span", { class: "step-n", "aria-hidden": "true" }, String(i + 1)),
+      h("button", { class: "linkish", type: "button", "aria-label": `Schritt ${i + 1}: ${n.title}` }, n.title),
+      h("span", { class: "step-k" }, typeDot(n.type), tlabel(n.type)),
+      n.description ? h("span", { class: "step-d" }, n.description) : null)));
+    $("lernpfad").append(h("div", { class: "lern-head" },
+      h("div", {}, h("h2", { id: "lern-h" }, "Lernpfad"),
+        h("div", { class: "note" }, `${PATH.length} ${PATH.length === 1 ? "Seite" : "Seiten"} zum Einlesen, in dieser Reihenfolge`)),
+      h("button", { class: "btn-primary", type: "button", onclick: () => openReader(PATH[0], "new") }, "Lernpfad starten")), ol);
+    $("lernpfad").hidden = false;
+  })();
+
+  // ---------------------------------------------------------------- Glossar: Titel, Aliase und Beschreibung der Begriffsseiten
+  (function glossary() {
+    const gtypes = new Set(D.glossary || []);
+    const terms = nodes.filter(n => gtypes.has(n.type)).sort((a, b) => coll.compare(a.title, b.title));
+    if (!terms.length) return;
+    const letterOf = t => { const c = (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").charAt(0).toUpperCase(); return c >= "A" && c <= "Z" ? c : "#"; };
+    const LETTERS = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ", "#"];
+    const aka = n => { const seen = new Set([n.title.toLowerCase()]); return n.aliases.filter(a => !seen.has(a.toLowerCase()) && seen.add(a.toLowerCase())); };
+    const from = typeOrder.filter(t => gtypes.has(t) && terms.some(n => n.type === t)).map(tlabel).join(" und ");
+    const input = h("input", { type: "search", placeholder: "Begriff oder Alias …", "aria-label": "Glossar durchsuchen" });
+    const letters = h("div", { class: "letters", role: "group", "aria-label": "Zum Anfangsbuchstaben springen" });
+    const hits = h("span", { class: "hitcount", "aria-live": "polite" });
+    const list = h("div", { class: "gl-cols" });
+    $("glossbody").append(h("div", { class: "gl-bar" }, input, letters, hits), list);
+    function draw() {
+      const q = input.value.trim().toLowerCase();
+      const inS = terms.filter(inScope);
+      const shown = inS.filter(n => !q || [n.title, n.description, ...n.aliases].some(x => (x || "").toLowerCase().includes(q)));
+      const groups = new Map();
+      for (const n of shown) { const l = letterOf(n.title); if (!groups.has(l)) groups.set(l, []); groups.get(l).push(n); }
+      list.replaceChildren(...[...groups].map(([l, ms]) => h("section", { class: "gl-group", id: `gl-${l}` }, h("h3", {}, l),
+        h("dl", { class: "gl" }, ...ms.map(n => {
+          const a = aka(n);
+          return h("div", { class: "gl-entry" },
+            h("dt", {}, h("button", { class: "linkish", type: "button", onclick: () => openReader(n, "new") }, n.title),
+              h("span", { class: "kind pill" }, typeDot(n.type), tlabel(n.type))),
+            n.description ? h("dd", {}, n.description) : null,
+            a.length ? h("dd", { class: "aka" }, "Auch: " + a.join(" · ")) : null);
+        })))));
+      if (!shown.length) list.append(h("p", { class: "gl-empty" }, "Kein Begriff passt."));
+      letters.replaceChildren(...LETTERS.filter(l => l !== "#" || groups.has("#")).map(l => h("button",
+        groups.has(l) ? { type: "button", onclick: () => $(`gl-${l}`).scrollIntoView({ behavior: "smooth", block: "start" }) } : { type: "button", disabled: "" }, l)));
+      hits.textContent = q ? `${shown.length} von ${inS.length}` : "";
+      const part = inS.length < terms.length ? ` (im gewählten ${SC.label}, ${terms.length} insgesamt)` : "";
+      $("glosssum").replaceChildren("Glossar", h("span", { class: "sumnote" }, ` · ${inS.length} ${inS.length === 1 ? "Begriff" : "Begriffe"} aus ${from}${part}`));
+    }
+    input.addEventListener("input", draw);
+    draw();
+    redrawGlossary = draw;
+    $("glosscard").hidden = false;
+  })();
+
+  // ---------------------------------------------------------------- Offene Stellen: Widersprüche, „zu prüfen“, [!todo]
+  (function openSpots() {
+    const all = nodes.flatMap(n => (n.open || []).map(o => ({ n, ...o })));
+    if (!all.length) return;
+    const tOrder = Object.fromEntries(typeOrder.map((t, i) => [t, i]));
+    const byPage = (a, b) => tOrder[a.n.type] - tOrder[b.n.type] || coll.compare(a.n.title, b.n.title);
+    const NAMES = { contra: ["Widerspruch", "Widersprüche"], check: ["Stelle zu prüfen", "Stellen zu prüfen"], todo: ["offen", "offen"] };
+    const go = o => openReader(o.n, "new", o.id);
+    const snip = o => h("button", { class: "snip", type: "button", onclick: () => go(o) }, o.text || "(ohne Text)");
+    function draw() {
+      const shown = all.filter(o => inScope(o.n));
+      const of = k => shown.filter(o => o.kind === k).sort(byPage);
+      const contra = of("contra"), check = of("check"), todo = of("todo");
+      const body = $("openbody");
+      body.replaceChildren(h("p", { class: "note" }, "Was die Seiten selbst als Widerspruch, „zu prüfen“ oder offen ([!todo]) markieren. Ein Klick öffnet die Fundstelle in der Leseansicht."));
+      for (const [k, list, title] of [["contra", contra, "Widersprüche"], ["check", check, "Zu prüfen"]]) {
+        if (!list.length) continue;
+        body.append(h("section", { class: "open-group" }, h("h3", {}, h("span", { class: `mark ${k}`, "aria-hidden": "true" }), `${title} (${list.length})`),
+          h("ul", { class: "open-list" }, ...list.map(o => h("li", {},
+            h("button", { class: "linkish", type: "button", onclick: () => go(o) }, o.n.title),
+            h("span", { class: "kind pill" }, typeDot(o.n.type), tlabel(o.n.type)), h("div", {}, snip(o)))))));
+      }
+      if (todo.length) {
+        const pages = new Map();
+        for (const o of todo) { if (!pages.has(o.n)) pages.set(o.n, []); pages.get(o.n).push(o); }
+        const det = h("details", { class: "sub" }, h("summary", {}, h("span", { class: "mark todo", "aria-hidden": "true" }),
+          ` Offen ([!todo]): ${todo.length} ${todo.length === 1 ? "Stelle" : "Stellen"} auf ${pages.size} ${pages.size === 1 ? "Seite" : "Seiten"}`));
+        // erst beim Aufklappen aufbauen: in großen Wikis sind es über tausend Stellen
+        det.addEventListener("toggle", () => {
+          if (!det.open || det.dataset.built) return;
+          det.dataset.built = "1";
+          det.append(h("ul", { class: "open-list" }, ...[...pages].map(([n, os]) => h("li", {}, h("details", {},
+            h("summary", {}, n.title, h("span", { class: "sumnote" }, ` · ${tlabel(n.type)} · ${os.length}`)),
+            h("ul", { class: "open-list" }, ...os.map(o => h("li", {}, snip(o)))))))));
+        });
+        body.append(det);
+      }
+      if (!shown.length) body.append(h("p", { class: "gl-empty" }, "Im gewählten Umfang keine offenen Stellen."));
+      const parts = [["contra", contra], ["check", check], ["todo", todo]].filter(([, l]) => l.length)
+        .map(([k, l]) => `${l.length} ${NAMES[k][l.length === 1 ? 0 : 1]}`);
+      const part = shown.length < all.length ? ` (im gewählten ${SC.label}, ${all.length} insgesamt)` : "";
+      $("opensum").replaceChildren("Offene Stellen", h("span", { class: "sumnote" }, ` · ${parts.join(" · ") || "keine"}${part}`));
+    }
+    draw();
+    redrawOpen = draw;
+    $("opencard").hidden = false;
+  })();
+
+  // Sprungleiste im Kopf zu den Abschnitten unter dem Graphen
+  (function jump() {
+    const targets = [["lernpfad", "Lernpfad"], ["glosscard", "Glossar"], ["opencard", "Offene Stellen"], ["tablecard", "Alle Seiten"]]
+      .filter(([id]) => !$(id).hidden);
+    if (targets.length < 2) return;
+    $("jump").append(...targets.map(([id, label]) => h("button", { class: "linkish", type: "button", onclick: () => {
+      const el = $(id);
+      if (el.tagName === "DETAILS") el.open = true;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } }, label)));
+    $("jump").hidden = false;
+  })();
+
+  // ---------------------------------------------------------------- Hell oder dunkel
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    $("th-light").setAttribute("aria-pressed", String(t === "light"));
+    $("th-dark").setAttribute("aria-pressed", String(t === "dark"));
+    try { localStorage.setItem("okf-wiki-theme", t); } catch (e) { /* ohne Speicher */ }
+  }
+  $("th-light").addEventListener("click", () => setTheme("light"));
+  $("th-dark").addEventListener("click", () => setTheme("dark"));
+  setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+
+  const allRis = nodes.map(n => n.ris).filter(Boolean);
+  $("foot").replaceChildren(`Stand ${day(D.generated)} · erzeugt mit okf-wiki`,
+    allRis.length ? h("button", { class: "linkish", type: "button", style: "margin-left:12px", onclick: () => download("quellen.ris", allRis.join("")) }, `Alle ${allRis.length} Quellen als RIS`) : "");
+  repaint();
+  colorKey();
+  renderPanel();
+  fit();
+  update();
+  try { if (localStorage.getItem("okf-wiki-view") === "cols") setView("cols"); } catch (e) { /* ohne Speicher */ }
+})();
+</script>
+</body>
+</html>

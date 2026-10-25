@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "okf-wiki",
+  "owner": {
+    "name": "sina-769",
+    "url": "https://github.com/sina-769"
+  },
+  "metadata": {
+    "description": "okf-wiki: Wissens-Wikis im Open Knowledge Format v0.2 für Claude Code",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "okf-wiki",
+      "source": "./",
+      "description": "Wissens-Wikis im Open Knowledge Format v0.2 nach dem pi-llm-wiki-Muster, mit Belegpflicht, Lint, Hooks und HTML-Dashboard. Braucht uv.",
+      "version": "0.1.0",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "description": "okf-wiki: Wiki-Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und Projektionen, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop. Wirkt nur in Projekten mit wiki.toml.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okf-wiki/hooks/okf_hook.py\" session-start 2>/dev/null || true",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okf-wiki/hooks/okf_hook.py\" guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okf-wiki/hooks/okf_hook.py\" post-edit 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okf-wiki/hooks/okf_hook.py\" stop 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

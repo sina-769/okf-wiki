@@ -1,0 +1,10 @@
+{
+  "name": "okf-wiki",
+  "version": "0.1.0",
+  "description": "Wissens-Wikis im Open Knowledge Format v0.2 nach dem pi-llm-wiki-Muster: Quellen unveränderlich erfassen, Karten mit Belegpflicht anlegen, Indexe und Log generieren, Lint, Prüfvermerke, Lizenz- und Nutzungsrechte je Quelle, APA/CSL/RIS-Export und ein HTML-Dashboard (Netz, Lernpfad, Glossar, offene Stellen, Leseansicht). Skill plus Hooks (Status, Schreibschutz, Ereignisprotokoll, Rebuild); braucht uv.",
+  "author": {
+    "name": "sina-769",
+    "url": "https://github.com/sina-769"
+  },
+  "keywords": ["wiki", "knowledge-base", "okf", "open-knowledge-format", "llm-wiki", "citations", "provenance", "dashboard"]
+}

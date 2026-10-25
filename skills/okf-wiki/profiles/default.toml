@@ -1,0 +1,93 @@
+# wiki.toml – Grundprofil für ein neues OKF-v0.2-Wiki nach pi-llm-wiki.
+# Kopieren mit `okfwiki.py init`, dann Titel, Typen und Regeln anpassen.
+# Alle Pfade sind relativ zum Ordner dieser Datei (Projektordner).
+
+[wiki]
+title = "Wiki – zuerst lesen"
+bundle = "wiki"                       # OKF-Bundle-Wurzel
+actor = "claude-code/claude-opus-5-5" # generated.by für neue Seiten; WIKI_ACTOR überschreibt
+okf_version = "0.2"
+requires_core = "0.1"
+
+[paths]
+events = "wiki/.events.jsonl"         # Append-only-Ereignisstrom (Vorschlag: im Bundle)
+raw = "raw"                           # Rohquellen-Pakete: raw/<slug>/original/ + manifest.json
+protected = []                        # weitere Glob-Muster für den Guard-Hook
+
+[index]
+root = "overview"                     # overview: Bereiche mit Anzahl | full: alle Seiten im Root-Index
+sort = "title"                        # title | slug
+entry_tag = "einstieg"                # Seiten mit diesem Tag (plus order: N) stehen unter „Zuerst lesen“
+badges = ["access", "license"]        # Frontmatter-Felder als `Badge` hinter dem Link; license zeigt den Lizenznamen
+
+[log]
+title = "Aktivitätslog"
+
+[enums]
+access = ["fulltext", "abstract", "citation"]
+
+[lint]
+orphans = "inbound"                   # inbound: keine eingehenden Links | isolated: weder ein- noch ausgehend
+fulltext_access = ["fulltext"]        # access-Werte, die ein raw_packet oder einen fulltext-Block verlangen
+
+[lint.severity]                       # Code = "error" | "warn" | "info" | "off"
+# fundweg_missing = "warn"            # Fundweg je Quelle verlangen (Standard: info)
+
+# Umfang (optional): eine Ebene, auf die das Dashboard einengt, z. B. Kern und Vertiefung.
+# Werte in Rangfolge vom Kern nach außen in [enums], lesbare Namen in [labels.<feld>].
+# [scope]
+# field = "umfang"
+# label = "Umfang"
+# default = "kern"                    # Voreinstellung im Dashboard; leer = alle
+# derive = true                       # Quellen ohne Wert erben den engsten Umfang der zitierenden Seiten
+
+# Sichtbarkeit (optional, nur nach Ja der Person): Seiten mit einem Wert aus hidden fehlen in
+# `dashboard --oeffentlich` ganz. Werte zusätzlich in [enums] (sichtbarkeit = ["oeffentlich", "intern"]).
+# [visibility]
+# field = "sichtbarkeit"
+# label = "Sichtbarkeit"
+# default = "oeffentlich"             # Wert für Seiten ohne Feld
+# hidden = ["intern"]
+# derive = true                       # Quellen ohne Wert, die nur interne Seiten nutzen, fehlen ebenfalls
+
+# Reihenfolge der Typen = Reihenfolge der Bereiche im Root-Index.
+[types.synthesis]
+folder = "syntheses"
+label = "Synthesen"
+description = "Querschnitt über mehrere Quellen"
+required = ["title", "description", "status", "generated", "sources"]
+sections = ["Frage", "Kerninsichten", "Verwandte Seiten"]
+needs_footnotes = true
+
+[types.analysis]
+folder = "analyses"
+label = "Analysen"
+description = "Dauerhafte Antworten und Prüfaufträge"
+required = ["title", "description", "status", "generated", "sources"]
+sections = ["Frage", "Kerninsichten", "Verwandte Seiten"]
+needs_footnotes = true
+stale_months = 3
+
+[types.concept]
+folder = "concepts"
+label = "Konzepte"
+description = "Begriffe, Mechanismen und Konventionen"
+required = ["title", "description", "status", "generated", "sources"]
+recommended = ["domain", "aliases"]
+needs_footnotes = true
+
+[types.entity]
+folder = "entities"
+label = "Entitäten"
+description = "Organisationen, Projekte, Datenquellen, Personen"
+required = ["title", "description", "status", "generated", "sources"]
+recommended = ["category"]
+needs_footnotes = true
+
+[types.source]
+folder = "sources"
+label = "Quellen"
+description = "Je eine Karte pro Quelle"
+required = ["title", "description", "resource", "access", "status", "generated"]
+recommended = ["license"]
+sections = ["Kurzreferat", "Kernaussagen", "Relevanz", "Verbindungen", "Zugang"]

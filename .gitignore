@@ -1,0 +1,5 @@
+# Ausgaben des Nachbau-Tests (tests/nachbau.sh) und erzeugte Dashboards
+.nachbau/
+build/
+__pycache__/
+.DS_Store

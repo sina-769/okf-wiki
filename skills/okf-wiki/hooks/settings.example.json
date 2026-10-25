@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet \"$HOME/.claude/skills/okf-wiki/okfwiki.py\" --root \"$CLAUDE_PROJECT_DIR\" status --hook 2>/dev/null || true",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"$HOME/.claude/skills/okf-wiki/hooks/okf_hook.py\" guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"$HOME/.claude/skills/okf-wiki/hooks/okf_hook.py\" post-edit 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet \"$HOME/.claude/skills/okf-wiki/okfwiki.py\" --root \"$CLAUDE_PROJECT_DIR\" rebuild --quiet 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
