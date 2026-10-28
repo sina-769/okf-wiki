@@ -1,12 +1,12 @@
 {
-  "description": "okfw: Wiki-Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und Projektionen, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop. Wirkt nur in Projekten mit wiki.toml.",
+  "description": "okfw: Wiki-Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und Projektionen, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop mit kurzer Meldung bei Lint-Fehlern. Wirkt nur in Projekten mit wiki.toml.",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" session-start 2>/dev/null || true",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" session-start 2>/dev/null || echo '{\"systemMessage\": \"okfw: Hook session-start ließ sich nicht starten (uv run --script)\"}'",
             "timeout": 20
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" post-edit 2>/dev/null || true",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" post-edit 2>/dev/null || echo '{\"systemMessage\": \"okfw: Hook post-edit ließ sich nicht starten (uv run --script)\"}'",
             "timeout": 10
           }
         ]
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" stop 2>/dev/null || true",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" stop 2>/dev/null || echo '{\"systemMessage\": \"okfw: Hook stop ließ sich nicht starten (uv run --script)\"}'",
             "timeout": 60
           }
         ]

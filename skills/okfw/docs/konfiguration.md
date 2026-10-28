@@ -15,11 +15,16 @@
 ├── templates/fonts/          IBM Plex Serif/Sans, JetBrains Mono (SIL OFL 1.1, Lizenztexte dabei), werden eingebettet
 ├── templates/apa.csl         Zitierstil APA 7 (Zotero, CC BY-SA 3.0), Standard für Literaturangaben
 ├── docs/konfiguration.md     diese Datei
+├── local.example.md          Vorlage für local.md
 └── local.md                  optional: Ergänzung je Installation (Projekte, Begleit-Skills), nicht im Plugin
 ```
 
 `profiles/dokumentation.toml` ist für Wikis über Projektdoku und Code gedacht: Quellen mit den Unterarten
-Dokumentation und Code, Lizenz und Rohquellen-Paket als Pflicht, fehlender Fundweg als Warnung.
+Dokumentation, Code, Spezifikation und Datensatz (`format`), Lizenz und Rohquellen-Paket als Pflicht,
+fehlender Fundweg als Warnung.
+
+Ohne `local.md` gilt allein `SKILL.md`; `local.example.md` zeigt die Abschnitte, die eine Installation
+dort festlegen kann (Webzugriff, externe Dienste, Begleit-Skills, Altbestand).
 
 Aufteilung: Der **Kern** kennt OKF v0.2, das gemeinsame pi-llm-wiki-Profil und alles, was in mehr
 als einem Wiki gebraucht wird (auch Lizenzsuche und Metadatenabruf über offizielle APIs). Alles, was
@@ -30,8 +35,9 @@ beschrieben in der `CLAUDE.md` des Projekts).
 Aufs Netz greift der Kern nur in Befehlen zu, die dafür da sind (`new source --doi/--pmid/--arxiv`:
 Crossref, sonst DataCite, PubMed, arXiv; `lizenz --fetch`: Crossref oder DataCite, Europe PMC,
 OpenAlex), nie bei `lint`, `rebuild`, `status` oder `dashboard`. Ohne `wiki.toml` schreibt er
-nichts; `status --hook` und `rebuild --quiet` beenden sich dann still, damit Hooks in fremden
-Ordnern nicht stören.
+nichts; `status --hook`, `rebuild --hook` und `rebuild --quiet` beenden sich dann still, damit Hooks in
+fremden Ordnern nicht stören. Andere Bedienfehler (kaputte `wiki.toml`, `requires_core` zu neu) melden
+`status --hook` und `rebuild --hook` als eine Zeile (`systemMessage`, Exit 0).
 
 ## Aufruf
 
@@ -44,20 +50,21 @@ Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nim
 
 | Befehl | Zweck |
 |---|---|
-| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]`, Vertrauensstufen, letzte Ereignisse; `--hook` gibt SessionStart-JSON aus |
+| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]` (ohne Code), Vertrauensstufen, Rohquellen ohne Karte, Umfang, Fundweg, Zahl der Ereignisse und Zeitpunkt des letzten; `--hook` gibt SessionStart-JSON aus |
 | `lint [--strict] [--json] [--summary]` | OKF-Konformität und Profilregeln; Exit 1 bei Fehlern (mit `--strict` auch bei Warnungen) |
-| `rebuild [--check] [--quiet]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts |
-| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
+| `rebuild [--check] [--quiet \| --hook]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts; `--hook` (Stop-Hook) erzeugt still neu und meldet Lint-Fehler als eine Zeile (`systemMessage`), ohne zu blockieren |
+| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` (mit `--set raw_packet=…` die Lizenz aus dessen `manifest.json`, `via: capture`) und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
 | `new source <slug>` bzw. `new-source <slug>` mit `--doi` · `--pmid` · `--arxiv` · `--manuell --titel … --url … [--autor] [--jahr] [--csl-typ]`, dazu `[--volltext PFAD --von URL] [--evidenz E]` | Quellenkarte mit Metadaten aus Crossref (DOIs, die Crossref nicht kennt: DataCite), PubMed oder arXiv (CSL, Kurzbeleg, APA-Block); setzt `[sources] checked_field` (`{by: process:crossref, at}`) und bei Rückzug oder Korrektur `[sources] updates_field`; `access` ohne Angabe `citation`, bei `--manuell` `originaldokument`, wenn das Profil ihn kennt |
-| `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt |
-| `capture <slug> --url … --file … [--source-path] [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444) |
+| `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt; zieht `generated` nach |
+| `capture <slug> --url … --file PFAD[=REPO-PFAD] … [--source-path] [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444); Symlinks werden abgelehnt. `--file` mehrfach, je Datei mit ihrem Pfad im Quell-Repository (`--file /tmp/x/hooks.json=hooks/hooks.json`); `--source-path` gilt für Dateien ohne eigenen. `--commit` warnt, wenn es kein voller SHA ist. Prüft vorher „Volltext lokal ablegen“ für die Lizenz aus `--license`/`--license-url`: nicht erlaubt → Abbruch, erst fragen oder Auflage → Warnung (ohne `--license` gilt die Lizenz als unbekannt) |
 | `hash <pfad> [--from URL]` (Alias `sha`) | `fulltext`-Block für Karten ohne Rohquellen-Paket |
-| `verify <seite> --by human:<id> [--status stable] [--note]` | Prüfvermerk nach OKF §5.2; ändert nur `verified` und `status`, alles andere bleibt byte-genau |
+| `verify <seite> --by human:<id> [--status stable] [--note]` | Prüfvermerk nach OKF §5.2; ändert nur `verified` und `status`, alles andere bleibt byte-genau. `--status stable` nur mit einem `human:`-Akteur, sonst Abbruch |
 | `event <art> <seite> [detail] [--by]` | Ereignis anhängen |
-| `body <seite> <datei\|->` | Körper ersetzen, Frontmatter byte-genau |
+| `body <seite> <datei\|->` | Körper ersetzen; im Frontmatter ändert sich nur `generated {by, at}` |
+| `sources <seite> [--add a,b] [--remove c]` (Alias `quellen`) | `sources[]` chirurgisch ergänzen oder kürzen, zieht `generated` nach und gibt die Fußnotenzeilen für den Text aus. `--add ID=SLUG` legt eine weitere Fußnote auf dieselbe Karte an (eigene Fundstelle). `--remove` nur, wenn der Text `[^id]` nicht mehr zitiert |
 | `init [--profile NAME]` | `wiki.toml` aus `profiles/NAME.toml`, Ordner, erstes Ereignis |
 | `rechte [<seite>] [--aktion A] [--json]` (Alias `rights`) | Lizenzen und Nutzungsrechte: Übersicht je Lizenzklasse, eine Quelle im Detail oder alle Quellen nach einem Recht gruppiert (`--aktion abbildung`) |
-| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch und protokolliert |
+| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch, zieht `generated` nach und protokolliert |
 | `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` |
 
 ## wiki.toml
@@ -187,11 +194,15 @@ passt); `rights {aktion: "wert: Hinweis"}` für Abweichungen von der Klasse, etw
 Genehmigung; `csl` als CSL-JSON ohne `id`; `fundweg` als Zuordnung oder Liste
 `{art, db, query, von, at, by}` mit `art` ∈ `suche` | `modellvorschlag` | `material` | `person` |
 `zitatverfolgung` (dann `von: <slug>` Pflicht). `db` nennt Datenbank oder Werkzeug (`pubmed`,
-`crossref`, `tooluniverse:PubMed_search_articles`), `query` den exakten Suchstring. Quellen aus
+`crossref`, `tooluniverse:PubMed_search_articles`), `query` den exakten Suchstring. `person` heißt, die
+Quelle wurde ausdrücklich genannt, etwa im Auftrag „README von pi-llm-wiki am Commit 46bd677“; `material`
+heißt, sie lag in mitgegebenem Material, ohne einzeln genannt zu sein, etwa eine Datei aus einem
+übergebenen Ordner oder ein Eintrag einer mitgeschickten Literaturliste. Quellen aus
 Git-Repositorien tragen `pinned {repo, commit}` mit `repo` als `owner/name` und dem vollen Commit-SHA;
 ohne `author` bildet die APA-Angabe daraus den Gruppenautor (der Inhaber aus `repo`, bei `format`
 documentation, code, specification oder dataset). `capture --commit SHA` schreibt den Commit ins
-`manifest.json` des Rohquellen-Pakets; dass er mit `pinned.commit` übereinstimmt, prüft der Kern nicht.
+`manifest.json` des Rohquellen-Pakets und warnt bei einem Kurz-SHA; dass er mit `pinned.commit` übereinstimmt,
+prüft der Kern nicht.
 
 Mit `[scope]` trägt jede Seite das Umfangsfeld (z. B. `umfang: kern`). Quellen dürfen es weglassen,
 dann gilt der engste Umfang der Seiten, die sie verlinken oder in `sources[]` führen. Abgeleitet
@@ -204,8 +215,26 @@ eigenen Wert, die nur von verborgenen Seiten verlinkt oder in `sources[]` gefüh
 verborgen (`derive`); auch das wird nur abgeleitet, nicht geschrieben. `[scope]` bleibt davon
 unberührt: Der Umfang blendet im Dashboard nur ein und aus, die Sichtbarkeit lässt Seiten weg.
 
-Unbekannte Felder bleiben erhalten (OKF §4.1). `verify` und `body` schreiben chirurgisch:
-nur die betroffenen Schlüssel bzw. der Körper ändern sich, das Ergebnis wird vor dem Schreiben geparst.
+Unbekannte Felder bleiben erhalten (OKF §4.1). `verify`, `body`, `sources`, `lizenz` und `fundweg` schreiben
+chirurgisch: nur die betroffenen Schlüssel bzw. der Körper ändern sich, das Ergebnis wird vor dem Schreiben
+geparst. Alle außer `verify` sind inhaltliche Änderungen und setzen `generated {by, at}` auf `[wiki] actor`
+und jetzt; `verify` hält nur eine Prüfung fest.
+
+## Fundstellen
+
+Die Fundstelle steht im Fußnotentext: `[^q]: [Titel](/sources/q.md), S. 4`. Erkannt werden S., Seite,
+Tab., Abb., Abschn., Kap., Art., Abs., §, Folie, Zeile(n), Z., Rn., Anhang und Erwägungsgrund; das
+Dashboard setzt sie in den APA-Beleg („…, 2026, Z. 120–135“).
+
+Eine Fußnote trägt nur eine Fundstelle. Belegt eine Seite viele Stellen derselben Quelle, etwa Zeilen
+einer Code-Datei, gibt es zwei Wege:
+
+- **Fundstelle im Satz**, eine Fußnote je Quelle: „`verify` hebt den Status nur mit `human:` (okfw.py
+  Z. 763–765).[^okfw-kern]“. Einfach; der APA-Beleg im Dashboard zeigt die Zeile dann nicht.
+- **Eine Fußnote je Fundstelle** auf dieselbe Karte: `sources concepts/x --add okfw-kern-z763=okfw-kern`
+  legt den Eintrag an, im Text dann `…[^okfw-kern-z763]` mit
+  `[^okfw-kern-z763]: [okfw.py](/sources/okfw-kern.md), Z. 763–765`. Das Literaturverzeichnis nennt
+  die Quelle trotzdem nur einmal.
 
 ## Ereignisse
 
@@ -244,6 +273,9 @@ Lizenzbefunde: `license_missing` = Quellenkarte ohne `license.name`; `license_un
 ungeklärt ist; `fulltext_shared` = Volltext von Git versioniert, obwohl die Lizenz keine Weitergabe
 erlaubt (Git-Status über `git ls-files`).
 
+Vertrauen: `stable_unverified` = `status: stable` ohne `verified`-Eintrag eines Menschen (`human:<id>`);
+ein Vermerk durch Claude oder einen Prozess reicht dafür nicht.
+
 Datum: `source_undated` = Quellenkarte ohne `csl`-Block, aus deren Feldern sich kein Datum ergibt
 (`date`, `created`, `published`, `year`); im APA-Beleg stünde „o. J.“. Für Repo-Dateien und Webseiten
 das Commit-, Veröffentlichungs- oder Stand-Datum setzen. Ist eine Quelle wirklich undatiert, das bewusst
@@ -273,10 +305,25 @@ Auflage bei Namensnennung: Urheber und Lizenz angeben. Projekte überschreiben Z
 `rights: {abbildung: "ja: Abdruckgenehmigung des Verlags vom 2026-10-20"}`; den Beleg dafür als
 Quelle erfassen).
 
-Lizenzen finden: `lizenz <seite> --fetch` fragt Crossref (bevorzugt die Lizenz der Verlagsfassung)
-und Europe PMC; ohne DOI, PMID oder PMCID bleibt nur das Original (Lizenzhinweis im PDF, Impressum),
+Lizenzen finden: `lizenz <seite> --fetch` fragt Crossref (bevorzugt die Lizenz der Verlagsfassung), für
+DOIs, die Crossref nicht kennt, DataCite, dann Europe PMC und OpenAlex (je Fundort, Verlagsfassung zuerst);
+ohne DOI, PMID oder PMCID bleibt nur das Original (Lizenzhinweis im PDF, Impressum, Kopf einer Datei),
 dann `lizenz <seite> --name … --url … --via originaldokument`. Unpaywall braucht eine E-Mail-Adresse
 im Aufruf und ist deshalb nicht eingebaut.
+
+`via` sagt, woher die Lizenzangabe stammt. Werte:
+
+| `via` | Herkunft |
+|---|---|
+| `crossref (vor)`, `datacite`, `europepmc`, `openalex (publishedVersion)` | `lizenz --fetch`, mit Dienst und Fassung |
+| `capture` | `capture --license`, von `new source --set raw_packet=…` aus dem Manifest übernommen |
+| `originaldokument` | Lizenzhinweis im Dokument selbst (PDF, Impressum, Kopfzeile einer Datei) |
+| `repo-lizenz` | `LICENSE`-Datei des Repositoriums am gepinnten Commit; am besten selbst als Rohquelle erfasst |
+| `github-api` | Lizenzfeld der GitHub-API (`/repos/<owner>/<name>/license`, `spdx_id`) |
+| `manuell` | Standard von `lizenz --name` ohne `--via`; besser einen der Werte oben setzen |
+
+Erläuterungen gehören nicht in `via`, sondern in eine Notiz auf der Karte (`event note …` oder den
+Abschnitt „Zugang“).
 
 Graph: Kanten sind Links im Text **und** `sources[].resource`, die auf Seiten im Bundle zeigen
 (OKF §5.1: eine Quelle, die ein Konzept ist, ist schon eine Kante). `few_links` zählt nur Links im Text.
@@ -306,8 +353,9 @@ Register und Korpora.
 
 `okfw.py dashboard` schreibt eine eigenständige HTML-Datei zum **inhaltlichen Erkunden** des Wikis:
 Daten als JSON eingebettet, Layout und Bedienung in reinem JavaScript, keine Bibliotheken aus dem Netz,
-in unter einer Sekunde erzeugt. Technische Angaben (Lint-Befunde, Prüfstatus, Dateipfade) stehen bewusst
-nicht darin; dafür gibt es `lint` und `status`. Zeitangaben (Stand, Fundweg) stehen nur als Datum darin,
+in unter einer Sekunde erzeugt. Technische Angaben (Lint-Befunde, Prüfstatus) stehen bewusst nicht darin;
+dafür gibt es `lint` und `status`. Dateipfade erscheinen nur als Ablageort der Volltexte auf Quellenkarten,
+in der öffentlichen Ausgabe nicht. Zeitangaben (Stand, Fundweg) stehen nur als Datum darin,
 auch in den eingebetteten Daten, keine Uhrzeiten. Was die Seiten selbst als offen markieren, zeigt die
 Übersicht „Offene Stellen“ (`[!todo]` dort eingeklappt). Mermaid ist bewusst nicht eingebettet (mehrere MB
 je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`-Block.
@@ -383,7 +431,8 @@ je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`
   `dashboard --oeffentlich` schreibt nach `[dashboard] public_path` (Standard
   `build/wiki-dashboard-oeffentlich.html`) und lässt verborgene Seiten vor allem anderen weg: Sie fehlen
   in Graph, Schichtengraph, Tabelle, Leseansicht, Übersichtsseiten, Kennzahlen, Literaturverzeichnis,
-  RIS und Vorschauen, ihre Kanten zählen nicht. Links auf sie werden zu reinem Text, Belege auf sie
+  RIS und Vorschauen, ihre Kanten zählen nicht. Ablageorte der Volltexte stehen in der öffentlichen Datei
+  bei keiner Quelle. Links auf sie werden zu reinem Text, Belege auf sie
   entfallen samt Fußnote. Arten, Umfänge und lesbare Namen (`[labels]`), die nur verborgene Seiten
   tragen, und das Sichtbarkeitsfeld selbst stehen nicht in der Datei. Die Konsole nennt jede Stelle
   mit `visibility_leak`; geschrieben wird trotzdem. Ohne `[visibility] field` und `hidden` bricht
@@ -394,7 +443,8 @@ je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`
   Suchstring, Datum, bei Zitatverfolgung ein Link zur Ausgangsquelle).
 - **Lizenzen und Nutzungsrechte:** Kachel „Lizenz geklärt“, Lizenzklasse als Kategorie. Jede
   Quellenkarte hat über der Literaturangabe den Abschnitt „Lizenz und Nutzungsrechte“, eingeklappt
-  mit der Lizenz in der Kopfzeile. Aufgeklappt: Lizenzname (verlinkt), Klasse, wo der Volltext liegt und ob Git ihn versioniert, dazu die Rechte als Tabelle
+  mit der Lizenz in der Kopfzeile. Aufgeklappt: Lizenzname (verlinkt), Klasse, wo der Volltext liegt und ob Git ihn versioniert (nur in der
+  normalen Ausgabe), dazu die Rechte als Tabelle
   (erlaubt, mit Auflage, nicht erlaubt, erst fragen). Die Übersichtsseite einer Lizenzklasse zeigt
   zuerst, was diese Klasse erlaubt, dann alle Quellen mit ihr.
 
@@ -427,7 +477,8 @@ qm = "Qualitätsmanagement"
   Fußnote mit `sources[].id`.
   Formatiert wird mit pandoc `--citeproc` und dem Stil aus `[export.csl] style`, sonst
   `templates/apa.csl` (Zotero „APA Style 7th edition“), Sprache `[export.csl] lang` (de-DE): ein Aufruf
-  für alle Quellen, rund 0,4 s für 54 Quellen. Ohne pandoc gibt es eine einfache Ersatzform.
+  für alle Quellen, rund 0,4 s für 54 Quellen. Denselben Stil nutzen der APA-Block neuer Quellenkarten
+  und `[export.bibliography]`. Ohne pandoc gibt es eine einfache Ersatzform.
   CSL je Quellenkarte: der `csl`-Block; sonst aus flachen Feldern `authors`, `year`, `container`,
   `volume`, `issue`, `pages`, `doi` (Autorenlisten „Nachname“, „V. M.“ werden gepaart);
   sonst aus `title`, `resource`, `author` (Pull Requests), Repo-Inhaber aus `pinned.repo` als
@@ -459,16 +510,26 @@ Website-Flächen (#FFFFFF, #161616). Mehr Farben bestehen ihn nicht, deshalb Gra
 Legende, Beschriftungen und die Tabelle sind die nicht farbliche Alternative. Umschaltbar ist nur
 hell und dunkel; ohne gespeicherte Wahl gilt die Einstellung des Systems.
 
-## Hooks (optional, Claude Code)
+## Hooks (Claude Code)
 
-`hooks/settings.example.json` in die `.claude/settings.json` des Projekts übernehmen:
+Als Plugin kommen die Hooks aus `hooks/hooks.json` des Plugins; im Projekt ist nichts einzutragen. Alle
+laufen über `uv run --script`, `python3` braucht es nicht:
 
-| Ereignis | Aufruf | Wirkung |
+| Ereignis | Aufruf (Plugin) | Wirkung |
 |---|---|---|
-| SessionStart | `okfw.py --root "$CLAUDE_PROJECT_DIR" status --hook` | Stand des Wikis und geschützte Pfade als Kontext |
-| PreToolUse `Write\|Edit\|MultiEdit\|NotebookEdit` | `python3 -I hooks/okf_hook.py guard` | blockiert Ereignisstrom, `raw/`, Exporte, `index.md`/`log.md` im Bundle, `[paths] protected` |
-| PostToolUse `Write\|Edit\|MultiEdit` | `python3 -I hooks/okf_hook.py post-edit` | Ereignis `write`/`edit` für Seiten im Bundle |
-| Stop | `okfw.py --root "$CLAUDE_PROJECT_DIR" rebuild --quiet` | Projektionen nachziehen |
+| SessionStart | `uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py" session-start` → `okfw.py status --hook` | Stand des Wikis und geschützte Pfade als Kontext |
+| PreToolUse `Write\|Edit\|MultiEdit\|NotebookEdit` | `… okf_hook.py guard` | blockiert Ereignisstrom, `raw/`, Exporte, Dashboards (mit `[visibility]` auch das öffentliche), `index.md`/`log.md` im Bundle, `[paths] protected` |
+| PostToolUse `Write\|Edit\|MultiEdit` | `… okf_hook.py post-edit` | Ereignis `write`/`edit` für Seiten im Bundle |
+| Stop | `… okf_hook.py stop` → `okfw.py rebuild --hook` | Projektionen nachziehen; Lint-Fehler als eine Zeile, ohne zu blockieren |
+
+Nebenfall **Skill-Ordner** (`~/.claude/skills/okfw`, ohne Plugin): `hooks/settings.example.json` in die
+`.claude/settings.json` des Projekts übernehmen. Dort rufen SessionStart und Stop den Kern direkt auf
+(`uv run --quiet ~/.claude/skills/okfw/okfw.py --root "$CLAUDE_PROJECT_DIR" status --hook` bzw.
+`rebuild --hook`), Guard und Ereignisprotokoll wie oben `okf_hook.py` über `uv run --script`. Nicht beide
+Arten zugleich, sonst laufen die Hooks doppelt.
 
 Der Guard sucht die `wiki.toml` aufwärts ab der Zieldatei (rund 30 ms, nur Standardbibliothek,
-Python ≥ 3.11 wegen `tomllib`). Schreibzugriffe über Bash erfasst er nicht; das bleibt Regel.
+Python ≥ 3.11 wegen `tomllib`, das uv bereitstellt). Er schützt dieselben Pfade, die `status --hook` als
+„Nicht direkt bearbeiten“ nennt (`protected_paths` im Kern). Schreibzugriffe über Bash erfasst er nicht;
+das bleibt Regel. Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`,
+Zeitüberschreitung) melden die Hooks als eine Zeile (`systemMessage`); ohne `wiki.toml` bleiben sie still.

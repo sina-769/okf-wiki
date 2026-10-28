@@ -7,11 +7,12 @@
   okf_hook.py guard          PreToolUse: blockiert Schreibzugriffe auf Rohquellen, Ereignisstrom und Projektionen
   okf_hook.py post-edit      PostToolUse: protokolliert Write/Edit an Wiki-Seiten im Ereignisstrom
   okf_hook.py session-start  SessionStart: `okfw.py status --hook`, nur wenn das Projekt eine wiki.toml hat
-  okf_hook.py stop           Stop: `okfw.py rebuild --quiet`, nur wenn das Projekt eine wiki.toml hat
+  okf_hook.py stop           Stop: `okfw.py rebuild --hook` (Rebuild, Lint-Fehler als eine Zeile), nur mit wiki.toml
 
 Guard und Ereignisprotokoll suchen die wiki.toml aufwärts ab der Zieldatei, session-start und stop
 im Projektordner ($CLAUDE_PROJECT_DIR); ohne wiki.toml tut der Hook nichts. So kostet das Plugin in
-Projekten ohne Wiki keinen Start des Kerns. Braucht Python ≥ 3.11 (tomllib); im Plugin startet es
+Projekten ohne Wiki keinen Start des Kerns. Bedienfehler (kaputte wiki.toml, falsches requires_core,
+fehlendes uv, Zeitüberschreitung) melden die Hooks als eine Zeile (`systemMessage`), blockieren aber nichts. Braucht Python ≥ 3.11 (tomllib); im Plugin startet es
 deshalb über `uv run --script`.
 Entspricht Guard und Ereignisprotokoll aus dem Claude-Code-Plugin von pi-llm-wiki.
 """
@@ -30,6 +31,19 @@ RESERVED = ("index.md", "log.md")
 CORE = Path(__file__).resolve().parent.parent / "okfw.py"
 
 
+class ConfigError(Exception):
+    """wiki.toml vorhanden, aber nicht lesbar."""
+
+
+def notice(text: str) -> None:
+    """Eine Zeile für die Person (Claude Code zeigt systemMessage an), ohne etwas zu blockieren."""
+    print(json.dumps({"systemMessage": one_line(f"okfw: {text}")}, ensure_ascii=False))
+
+
+def one_line(text: str) -> str:
+    return " ".join(str(text).split())
+
+
 def find_config(path: Path):
     for directory in path.parents:
         candidate = directory / "wiki.toml"
@@ -45,8 +59,8 @@ def load(path: Path):
     try:
         with config.open("rb") as f:
             cfg = tomllib.load(f)
-    except (OSError, tomllib.TOMLDecodeError):
-        return None
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ConfigError(f"{config} nicht lesbar ({exc})") from exc
     root = config.parent.resolve()
     wiki = cfg.get("wiki", {})
     paths = cfg.get("paths", {})
@@ -56,11 +70,22 @@ def load(path: Path):
         "bundle": (root / bundle_rel).resolve(),
         "events": (root / (paths.get("events") or f"{bundle_rel}/.events.jsonl")).resolve(),
         "raw": (root / paths["raw"]).resolve() if paths.get("raw") else None,
-        "exports": {(root / v["path"]).resolve() for v in cfg.get("export", {}).values()
-                    if isinstance(v, dict) and v.get("path")}
-                   | {(root / cfg.get("dashboard", {}).get("path", "build/wiki-dashboard.html")).resolve()},
+        "exports": {(root / p).resolve() for p in generated_outputs(cfg)},
         "protected": list(paths.get("protected", [])),
     }
+
+
+def generated_outputs(cfg: dict) -> list[str]:
+    """Exporte und Dashboards wie protected_paths() im Kern: [export.*] path, [dashboard] path und, mit
+    [visibility] field, das öffentliche Dashboard ([dashboard] public_path oder <path>-oeffentlich daneben)."""
+    out = [v["path"] for v in cfg.get("export", {}).values() if isinstance(v, dict) and v.get("path")]
+    dashboard = cfg.get("dashboard", {})
+    path = dashboard.get("path") or "build/wiki-dashboard.html"
+    out.append(path)
+    if cfg.get("visibility", {}).get("field"):
+        public = Path(path)
+        out.append(dashboard.get("public_path") or str(public.with_name(f"{public.stem}-oeffentlich{public.suffix}")))
+    return out
 
 
 def target_path(event: dict):
@@ -96,7 +121,11 @@ def reason_for(ctx: dict, path: Path):
 
 def guard(event: dict) -> None:
     path = target_path(event)
-    ctx = load(path) if path else None
+    try:
+        ctx = load(path) if path else None
+    except ConfigError as exc:
+        notice(f"Guard ohne Wirkung, {exc}; Rohquellen und Projektionen sind bis zur Korrektur nicht geschützt.")
+        return
     reason = reason_for(ctx, path) if ctx else None
     if reason:
         print(json.dumps({"hookSpecificOutput": {
@@ -108,7 +137,11 @@ def guard(event: dict) -> None:
 
 def post_edit(event: dict) -> None:
     path = target_path(event)
-    ctx = load(path) if path else None
+    try:
+        ctx = load(path) if path else None
+    except ConfigError as exc:
+        notice(f"Ereignisprotokoll ohne Wirkung, {exc}.")
+        return
     if not ctx or path.suffix != ".md" or path.name in RESERVED or not path.is_relative_to(ctx["bundle"]):
         return
     rel = path.relative_to(ctx["bundle"])
@@ -139,6 +172,11 @@ def run_core(root: Path, *args: str, timeout: int) -> subprocess.CompletedProces
                           capture_output=True, text=True, timeout=timeout)
 
 
+def core_failed(step: str, done: subprocess.CompletedProcess) -> str:
+    last = (done.stderr or done.stdout).strip().splitlines()
+    return f"{step} fehlgeschlagen (Exit {done.returncode}): {last[-1] if last else 'keine Ausgabe'}"
+
+
 def session_start(event: dict) -> None:
     root = project_root(event)
     if root is None:
@@ -146,24 +184,36 @@ def session_start(event: dict) -> None:
     try:
         done = run_core(root, "status", "--hook", timeout=18)
     except subprocess.TimeoutExpired:
+        notice("Wiki-Status beim Sitzungsstart nach 18 s abgebrochen (uv lädt beim ersten Start Python und Pakete).")
         return
     if done is None:
-        print(json.dumps({"hookSpecificOutput": {
+        print(json.dumps({"systemMessage": "okfw: uv fehlt im PATH, der Wiki-Kern läuft ohne uv nicht.",
+                          "hookSpecificOutput": {
             "hookEventName": "SessionStart",
             "additionalContext": f"Projekt mit wiki.toml ({root}), aber `uv` fehlt im PATH: okfw braucht uv "
-                                 "(https://docs.astral.sh/uv/). Der Person sagen, bevor am Wiki gearbeitet wird.",
+                                 "(https://docs.astral.sh/uv/). Darauf hinweisen, bevor am Wiki gearbeitet wird.",
         }}, ensure_ascii=False))
     elif done.returncode == 0:
         sys.stdout.write(done.stdout)
+    else:
+        notice(core_failed("Wiki-Status", done))
 
 
 def stop(event: dict) -> None:
     root = project_root(event)
-    if root is not None:
-        try:
-            run_core(root, "rebuild", "--quiet", timeout=55)
-        except subprocess.TimeoutExpired:
-            pass
+    if root is None:
+        return
+    try:
+        done = run_core(root, "rebuild", "--hook", timeout=55)
+    except subprocess.TimeoutExpired:
+        notice("Rebuild beim Stop nach 55 s abgebrochen; `rebuild` von Hand ausführen.")
+        return
+    if done is None:
+        notice("uv fehlt im PATH, Rebuild beim Stop übersprungen.")
+    elif done.returncode == 0:
+        sys.stdout.write(done.stdout)
+    else:
+        notice(core_failed("Rebuild beim Stop", done))
 
 
 def main() -> None:
@@ -173,8 +223,12 @@ def main() -> None:
         event = {}
     if not isinstance(event, dict):
         return
+    name = sys.argv[1] if len(sys.argv) > 1 else ""
     handlers = {"guard": guard, "post-edit": post_edit, "session-start": session_start, "stop": stop}
-    handlers.get(sys.argv[1] if len(sys.argv) > 1 else "", lambda e: None)(event)
+    try:
+        handlers.get(name, lambda e: None)(event)
+    except Exception as exc:  # ein Hook darf die Sitzung nie anhalten; Fehler als eine Zeile
+        notice(f"Hook {name}: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":

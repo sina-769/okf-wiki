@@ -15,7 +15,10 @@ wenn sie strenger sind; für Werkzeuge und alle allgemeinen Regeln gilt dieser S
 
 **Lokale Ergänzung:** Liegt neben dieser Datei eine `local.md`, vor der ersten Wiki-Arbeit in einer
 Sitzung lesen. Sie nennt, was nur für diese Installation gilt (Projekte, Begleit-Skills, Altbestand,
-Hintergrund), und gilt zusätzlich zu diesem Skill.
+Hintergrund), und gilt zusätzlich zu diesem Skill. Vorlage: `local.example.md`. **Ohne `local.md`**
+gilt allein dieser Skill: Webseiten und Dokumente ohne API nur mit ausdrücklicher Freigabe (die
+Aufgabe nennt die Seite oder das Dokument selbst, oder auf Nachfrage kommt ein Ja), Volltexte an
+Subagents oder externe Dienste nur nach `rechte`, keine Begleit-Skills voraussetzen.
 
 ## Ein Werkzeug für alle Wikis (verbindlich)
 
@@ -63,7 +66,7 @@ Ohne `wiki.toml` nichts schreiben; neues Wiki mit `init --profile default`.
 5. **`access` ehrlich halten.** `citation` = nur Metadaten; Inhalt bleibt `> [!todo]`, keine Belege für Aussagen. `abstract` = Aussagen als abstract-basiert kennzeichnen („(Abstract)“). `fulltext` und gleichrangige Profilwerte (`[lint] fulltext_access`, z. B. `originaldokument`) = Kernaussagen mit Fundstelle (S., Tab., Abschn., Art., Abs., Zeile).
 6. **Nichts erfinden.** Lücken bleiben `> [!todo]`. Keine Stub-Seiten für fehlende Links anlegen.
 7. **Widersprüche auf beiden Seiten** markieren: `> ⚠️ **Widerspruch:** A sagt X, B sagt Y.`
-8. **Vertrauen nach OKF.** `generated: {by, at}` bei jeder inhaltlichen Änderung nachziehen. `verified` nur für eine inhaltliche Prüfung am Original, über `verify`: `human:<id>` nur, wenn ein Mensch geprüft hat; eine Volltextprüfung durch Claude trägt den Akteur aus `[wiki] actor`. Ein Metadatenabgleich (Crossref, PubMed) ist keine inhaltliche Prüfung und gehört in ein eigenes Feld (z. B. `metadaten_geprueft`), nicht in `verified`. `status: stable` erst mit `verified` durch `human:<id>`; ein `verify`-Vermerk durch Claude (Akteur aus `[wiki] actor`) hält die Prüfung fest, hebt den Status aber nicht.
+8. **Vertrauen nach OKF.** `generated: {by, at}` bei jeder inhaltlichen Änderung nachziehen: `body`, `sources`, `lizenz` und `fundweg` tun das selbst, deshalb Inhalte mit `body` schreiben und fehlende Quellen mit `sources <seite> --add …` nachtragen statt mit Edit. `verified` nur für eine inhaltliche Prüfung am Original, über `verify`: `human:<id>` nur, wenn ein Mensch geprüft hat; eine Volltextprüfung durch Claude trägt den Akteur aus `[wiki] actor`. Ein Metadatenabgleich (Crossref, PubMed) ist keine inhaltliche Prüfung und gehört in ein eigenes Feld (z. B. `metadaten_geprueft`), nicht in `verified`. `status: stable` erst mit `verified` durch `human:<id>`; ein `verify`-Vermerk durch Claude (Akteur aus `[wiki] actor`) hält die Prüfung fest, hebt den Status aber nicht; `verify --status stable` lehnt andere Akteure ab.
 9. **Frische.** Momentaufnahmen, Praxisbeschreibungen, Entwürfe, lebende Dokumente und Rechtsstände bekommen `stale_after` (Profil: `stale_months`).
 10. **Unbekannte Felder erhalten.** Frontmatter nicht neu serialisieren; gezielt editieren.
 11. **Internes bleibt intern.** Was nicht nach außen darf (OPSEC: Kunden, Geschäftsideen, Pläne, Zahlen), trägt `sichtbarkeit: intern`, sobald die `wiki.toml` `[visibility]` hat. Den Schalter in einem Projekt nur nach ausdrücklicher Freigabe setzen. Öffentliche Seiten verlinken und belegen nicht auf interne. Weitergegeben wird nur `dashboard --oeffentlich`, nie die normale Ausgabe.
@@ -103,7 +106,8 @@ Gilt in jedem Wiki und für alles, was aus dem Wiki in ein Produkt geht (Folie, 
   fragen (Matrix je Lizenzklasse: [docs/konfiguration.md](docs/konfiguration.md#lizenzen-und-nutzungsrechte)).
   Eine erteilte Genehmigung steht mit Beleg als `rights:` auf der Karte.
 - **Anhalten, bevor ein Recht gebraucht wird.** Vor jeder dieser Handlungen `rechte` prüfen:
-  Volltext ablegen (`capture`, `fulltext`), Volltext versionieren oder weitergeben, Abbildung oder
+  Volltext ablegen (`capture`, `fulltext`; `capture --license …` prüft das selbst und bricht bei „nicht
+  erlaubt“ ab), Volltext versionieren oder weitergeben, Abbildung oder
   Tabelle übernehmen, bearbeiten oder übersetzen, Volltext an Subagents, externe Worker oder Container
   geben, Nutzung im kommerziellen Rahmen.
   - erlaubt → weiter.
@@ -119,11 +123,11 @@ Gilt in jedem Wiki und für alles, was aus dem Wiki in ein Produkt geht (Folie, 
 
 ## Arbeitszyklus
 
-1. **Recall** – vor inhaltlicher Arbeit `<bundle>/index.md` lesen, dann `grep -ril "<begriff>" <bundle>/` (trifft auch `aliases`, `recall_triggers`). Erst wenn das Wiki nichts hat, recherchieren.
-2. **Capture** – Quelle zuerst festhalten: `capture <slug> --url … --file …` (Paket) oder `hash <pfad> --from URL` und den Block als `fulltext:` in die Karte. Downloads vorher in den Scratchpad, nie direkt in Rohquellen-Ordner. Vor dem Ablegen eines Volltexts die Lizenz klären (siehe unten).
+1. **Recall** – vor inhaltlicher Arbeit `<bundle>/index.md` lesen, dann `grep -ril "<begriff>" <bundle>/` (trifft auch `aliases`, `recall_triggers`). Recall läuft bewusst mit Bordmitteln; einen Suchbefehl im Kern gibt es nicht. Erst wenn das Wiki nichts hat, recherchieren.
+2. **Capture** – Quelle zuerst festhalten: `capture <slug> --url … --file … --license … --license-url …` (Paket; die Lizenz landet im Manifest, `new source --set raw_packet=raw/<slug>` übernimmt sie auf die Karte) oder `hash <pfad> --from URL` und den Block als `fulltext:` in die Karte. Downloads vorher in den Scratchpad, nie direkt in Rohquellen-Ordner. Vor dem Ablegen eines Volltexts die Lizenz klären (siehe unten).
 3. **Ingest** – Karte anlegen: `new source <slug> --title … --description … --access …` (mit `--csl datei.json` aus einer Literatur-API, setzt Titel, Kurzbeleg, APA-Block). Dann Konzepte, Entitäten, Synthesen: `new concept <slug> --title … --sources a,b`. Beidseitig verlinken.
 4. **Retro** – neue Erkenntnisse sofort als Seite oder Ergänzung mit Beleg; dauerhafte Antworten als `synthesis` bzw. `analysis`.
-5. **Lint** – vor Abschluss `lint` (0 Fehler), `rebuild` (oder der Stop-Hook). `lint --summary` für große Wikis, `--json` für Maschinen.
+5. **Lint** – vor Abschluss `lint` (0 Fehler), `rebuild` (oder der Stop-Hook; er meldet Lint-Fehler als kurze Zeile, blockiert aber nicht). `lint --summary` für große Wikis, `--json` für Maschinen.
 6. **Gegenprüfung** – vor einem Produkt aus dem Wiki (Folie, Kapitel, Beitrag) prüft ein zweiter Agent
    mit frischem Kontext und nur lesenden Werkzeugen jede belegte Aussage gegen die Rohquelle in `raw/`
    oder den `fulltext`-Block: Stimmt die Fundstelle, trägt die Quelle die Aussage, ist `access` ehrlich?
@@ -140,7 +144,7 @@ uv run --quiet ~/.claude/skills/okfw/okfw.py verify concepts/x --by human:<id> -
 
 `status` · `lint [--strict] [--summary] [--json]` · `rebuild [--check]` · `new <typ> <slug> …` ·
 `capture <slug> --url --file` · `hash <pfad>` · `verify <seite> --by …` · `event <art> <seite> [detail]` ·
-`body <seite> <datei|->` · `init [--profile …]` · `fundweg <seite> --art …` · `rechte [<seite>] [--aktion …]` ·
+`body <seite> <datei|->` · `sources <seite> --add a,b | --remove c` · `init [--profile …]` · `fundweg <seite> --art …` · `rechte [<seite>] [--aktion …]` ·
 `lizenz <seite> --fetch | --name …` · `lizenz --missing --fetch [--dry-run]` · `dashboard [--out PFAD] [--oeffentlich] [--open]`. Optionen und
 `wiki.toml`-Schlüssel: [docs/konfiguration.md](docs/konfiguration.md).
 
@@ -186,7 +190,7 @@ verweisen; Lint meldet das als `visibility_leak`. Nur die öffentliche Datei wei
 ## Lint lesen
 
 - **Fehler** brechen OKF oder das Profil: kaputtes Frontmatter, `sources`-Eintrag ohne `resource`, Fußnote ohne `sources`-Eintrag, Frontmatter in Ordner-`index.md`, manipulierte Rohquelle, Pflichtfeld fehlt.
-- **Warnungen** sind Pflegeaufgaben: Waisen, wenige Links, fehlende Abschnitte, `stable` ohne `verified`, Aussagen auf `citation`-Quellen, veraltete Projektionen, Quellenkarten ohne Datum (`source_undated`, sonst „o. J.“ im Beleg; echt undatiert: `date: o. J.`). `visibility_leak` (öffentliche Seite verweist auf eine interne) vor jeder öffentlichen Ausgabe beheben.
+- **Warnungen** sind Pflegeaufgaben: Waisen, wenige Links, fehlende Abschnitte, `stable` ohne `verified` durch `human:<id>`, Aussagen auf `citation`-Quellen, veraltete Projektionen, Quellenkarten ohne Datum (`source_undated`, sonst „o. J.“ im Beleg; echt undatiert: `date: o. J.`). `visibility_leak` (öffentliche Seite verweist auf eine interne) vor jeder öffentlichen Ausgabe beheben.
 - Befunde nicht durch Abschwächen der `wiki.toml` „lösen“, ohne nachzufragen.
 
 ## Hooks
@@ -198,11 +202,15 @@ Alle vier wirken nur in Projekten mit `wiki.toml`.
   (`hooks/hooks.json` im Plugin), im Projekt ist nichts einzutragen.
 - **Als Skill-Ordner** (`~/.claude/skills/okfw`): `hooks/settings.example.json` in die
   `.claude/settings.json` des Projekts übernehmen.
+- Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`) melden die Hooks als eine
+  Zeile; der Stop-Hook nennt dazu die Zahl der Lint-Fehler. Blockiert wird nichts außer Schreibzugriffen
+  auf geschützte Dateien.
 - Nicht beides zugleich, sonst laufen die Hooks doppelt und das Ereignisprotokoll schreibt jede
   Änderung zweimal.
 
 ## Hintergrund
 
 - Alle Befehle und `wiki.toml`-Schlüssel: [docs/konfiguration.md](docs/konfiguration.md)
-- Grundprofil für neue Wikis: `profiles/default.toml` (`init --profile default`); weitere Profile
-  und Hintergrund dieser Installation nennt `local.md`, falls vorhanden.
+- Grundprofil für neue Wikis: `profiles/default.toml` (`init --profile default`), für Wikis über
+  Projektdoku und Code `profiles/dokumentation.toml`; weitere Profile und Hintergrund dieser Installation
+  nennt `local.md`, falls vorhanden.

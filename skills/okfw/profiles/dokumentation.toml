@@ -26,12 +26,14 @@ title = "Aktivitätslog"
 
 [enums]
 access = ["fulltext", "abstract", "citation"]
-format = ["documentation", "code"]
+format = ["documentation", "code", "specification", "dataset"]
 category = ["project", "tool"]
 
 [labels.format]
 documentation = "Dokumentation"
 code = "Code und Konfiguration"
+specification = "Spezifikation"
+dataset = "Datensatz"
 
 [labels.category]
 project = "Projekt"

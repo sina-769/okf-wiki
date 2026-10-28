@@ -9,7 +9,7 @@ okfw steht für Open Knowledge Format Wiki; OKF ist das Open Knowledge Format v0
 - **Skill** `okfw`: Arbeitsweise für Claude (Recall → Capture → Ingest → Retro → Lint), Beleg-,
   Lizenz- und Vertrauensregeln.
 - **Kern** `skills/okfw/okfw.py`: CLI und Python-Bibliothek (`init`, `capture`, `new`, `body`,
-  `rebuild`, `lint`, `verify`, `lizenz`, `rechte`, `dashboard` …). Alles Projektspezifische steht in
+  `sources`, `rebuild`, `lint`, `verify`, `lizenz`, `rechte`, `dashboard` …). Alles Projektspezifische steht in
   einer `wiki.toml` im Projekt; ohne `wiki.toml` schreibt der Kern nichts.
 - **Hooks**: Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und generierte
   Dateien, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop. Sie wirken nur in Projekten mit
@@ -19,7 +19,7 @@ okfw steht für Open Knowledge Format Wiki; OKF ist das Open Knowledge Format v0
 - **Quellen**: Das Plugin nimmt Quellen auf und belegt sie, enthält aber keine Literatursuche;
   Metadaten kommen per DOI, PMID oder arXiv-ID (`new source --doi`, `--pmid`, `--arxiv`).
 
-Die Texte von Skill und Dokumentation sind deutsch.
+Die Texte von Skill und Dokumentation sind deutsch. Was sich je Version ändert: [CHANGELOG.md](CHANGELOG.md).
 
 ## Dashboard
 
@@ -69,6 +69,9 @@ Ohne Plugin geht es auch als Skill-Ordner: `skills/okfw/` nach `~/.claude/skills
 und `skills/okfw/hooks/settings.example.json` in die `.claude/settings.json` des Projekts übernehmen.
 Nicht beides zugleich, sonst laufen die Hooks doppelt.
 
+Was nur für eine Installation gilt (Projekte, Begleit-Skills), steht in einer `local.md` neben
+`skills/okfw/SKILL.md`; Vorlage ist [skills/okfw/local.example.md](skills/okfw/local.example.md).
+
 ## Erste Schritte
 
 Im Projektordner (Pfad zum Kern aus der Plugin-Installation):
@@ -78,15 +81,33 @@ OKF=$(ls -d ~/.claude/plugins/cache/okfw/okfw/*/skills/okfw | tail -1)/okfw.py
 uv run --quiet "$OKF" init --profile default        # wiki.toml und wiki/ anlegen
 uv run --quiet "$OKF" capture <slug> --url URL --file PFAD --license NAME --license-url URL
 uv run --quiet "$OKF" new source <slug> --title … --description … --access fulltext --set raw_packet=raw/<slug>
+                                                    # übernimmt die Lizenz aus dem Manifest
+uv run --quiet "$OKF" new concept <slug> --title … --description … --sources <quelle>
+uv run --quiet "$OKF" body concepts/<slug> text.md  # Inhalt setzen, Fußnoten [^<quelle>]
+uv run --quiet "$OKF" sources concepts/<slug> --add <quelle2>   # Quelle nachtragen
 uv run --quiet "$OKF" rebuild && uv run --quiet "$OKF" lint
 uv run --quiet "$OKF" dashboard                     # build/wiki-dashboard.html
 ```
 
 Für ein Wiki über Projektdoku und Code gibt es `init --profile dokumentation`: Quellen mit den Unterarten
-Dokumentation und Code, Lizenz und Rohquellen-Paket als Pflicht, fehlender Fundweg als Warnung.
+Dokumentation, Code, Spezifikation und Datensatz, Lizenz und Rohquellen-Paket als Pflicht, fehlender
+Fundweg als Warnung. Dateien aus einem Repo erfasst `capture <slug> --url … --commit SHA --file PFAD=REPO-PFAD`
+mit dem Pfad im Repo je Datei.
+
+`capture --license` prüft vorher, ob die Lizenz das lokale Ablegen des Volltexts erlaubt. `status: stable`
+setzt nur ein Mensch: `verify <seite> --by human:<id> --status stable`.
 
 Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. Alle Befehle und
 `wiki.toml`-Schlüssel: [skills/okfw/docs/konfiguration.md](skills/okfw/docs/konfiguration.md).
+
+## Tests
+
+Kern und Hooks haben Python-Tests (unittest, ohne weitere Abhängigkeiten). Sie rufen beides so auf wie
+Claude Code, über `uv run --script`, je in einem frischen Wiki unter `$TMPDIR`:
+
+```bash
+uv run python -m unittest        # im Plugin-Ordner
+```
 
 ## Nachbau-Test
 
@@ -102,7 +123,11 @@ docker build -t okfw-nachbau -f tests/Dockerfile tests
 docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okfw-nachbau /src /out/lauf-$(date +%H%M%S)
 ```
 
-Letztes Protokoll: [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md).
+Mit `-e CLAUDE_CODE_OAUTH_TOKEN` (Token aus `claude setup-token`) läuft zusätzlich eine echte
+Claude-Sitzung, die an den Schreibschutz stößt.
+
+Letztes Protokoll: [tests/protokoll-2026-10-28.md](tests/protokoll-2026-10-28.md) (okfw 0.2.0, 32 von 32
+mit `claude -p`); davor [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md) (0.1.0).
 
 ## Lizenz und Dank
 

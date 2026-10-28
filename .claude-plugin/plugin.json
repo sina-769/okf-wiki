@@ -1,6 +1,6 @@
 {
   "name": "okfw",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wissens-Wikis im Open Knowledge Format v0.2 nach dem pi-llm-wiki-Muster: Quellen unveränderlich erfassen, Karten mit Belegpflicht anlegen, Indexe und Log generieren, Lint, Prüfvermerke, Lizenz- und Nutzungsrechte je Quelle, APA/CSL/RIS-Export und ein HTML-Dashboard (Netz, Lernpfad, Glossar, offene Stellen, Leseansicht). Skill plus Hooks (Status, Schreibschutz, Ereignisprotokoll, Rebuild); braucht uv.",
   "author": {
     "name": "sina-769",
