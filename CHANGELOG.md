@@ -1,5 +1,54 @@
 # Änderungen
 
+## 0.3.0 · 28.10.2026
+
+Die Freigabe ist jetzt an den Inhalt gebunden, den jemand geprüft hat.
+
+Verhalten geändert:
+
+- **Prüfwert in jedem Prüfvermerk.** `verify` schreibt in jeden `verified`-Eintrag `body_sha256`, den
+  SHA-256 des Seitentexts ohne Frontmatter (eine ausgewiesene Erweiterung zu OKF §5.2). Ändert sich der
+  Text danach, verfällt der Vermerk: Lint `verified_outdated` (Warnung, bei `status: stable` Fehler).
+- **Rückfall auf draft.** `body` setzt eine stable-Seite auf `draft`, wenn ihre Freigabe nicht mehr zum
+  neuen Text passt; `verified` bleibt stehen, das Ereignis nennt die verfallene Freigabe. Abschaltbar mit
+  `[trust] edit_resets_stable = false`. Gleicher Text ändert nichts.
+- **Freigabe nur nach Gegenprüfung.** `verify --by human:<id> --status stable` verlangt je Seite einen
+  Vermerk von Claude oder einem Prozess mit Prüfwert zum selben Text; sonst bricht es ohne Änderung ab
+  (`--force` gibt trotzdem frei und vermerkt das, Lint `human_without_check`). `verify` nimmt mehrere
+  Seiten und eine gemeinsame `--note` (eine Charge, ein Ereignis je Seite).
+- **`status` und `verified` nur über `verify`.** Der Guard blockiert Edit und Write, die diese Felder
+  einer Wiki-Seite ändern; eine neue Seite darf `status: draft` tragen.
+- **Edit und Write ziehen `generated` nach.** Hat ein Edit oder Write den Text einer Wiki-Seite
+  geändert, setzt der PostToolUse-Hook `generated {by, at}` mit dem Akteur aus `[wiki] actor`
+  (`body <seite> --nachziehen`); auf einer stable-Seite greift derselbe Rückfall wie bei `body`. Danach
+  liest Claude die Datei vor dem nächsten Edit neu.
+- **Vertrauensstufen nur aus gültigen Vermerken.** `status` zählt human-reviewed und machine-confirmed
+  nur, wenn der Vermerk zum jetzigen Text passt; Seiten, deren Vermerke alle verfallen sind (auch die von
+  Prozessen), stehen getrennt als „n verfallen“. Dazu „n zur Freigabe“ und die Zahl der Gegenprüfungen
+  ohne Prüfwert.
+
+Neu:
+
+- Dashboard-Abschnitt **„Zur Freigabe“**: Seiten mit Gegenprüfung, aber ohne gültige Freigabe, je mit dem
+  ganzen Text und hervorgehobenen Belegen (lange Seiten zuerst die belegten Aussagen, der ganze Text klappt
+  auf, eingeklappt mit „n Absätze ohne Fußnote“), Notiz der Gegenprüfung und fertigem `verify`-Aufruf
+  für die markierten Seiten zum Kopieren; darunter verfallene Freigaben und „Gegenprüfung ohne Prüfwert“
+  mit einer Zeile, die eine neue Gegenprüfung anstößt.
+- `[trust] human = "human:<id>"` belegt die Kennung in „Zur Freigabe“ vor; `[trust] check_command`
+  (z. B. `/pruefen`) ist der Aufruf der Gegenprüfung in der Liste ohne Prüfwert.
+- Lint-Regeln `verified_unhashed` (info: Gegenprüfung ohne Prüfwert) und `check_outdated` (info:
+  verfallene Prüfung durch Claude oder einen Prozess); opt-in `[trust] signed_human = true` mit
+  `human_unsigned` (warn: Freigabe nicht aus einem signierten Commit).
+- Abschnitt „Freigabe über Claude“ in `skills/okfw/docs/konfiguration.md` mit Ablauf einer Charge und
+  Einrichtung der Commit-Signatur.
+- Nachbau-Test mit zwei Schritten zur Freigabe (Ablehnung ohne Gegenprüfung, Rückfall nach `body`):
+  33 von 33 Pflichtschritten bestanden, der Schritt mit `claude -p` ohne Token übersprungen
+  ([tests/protokoll-2026-10-28-0.3.0.md](tests/protokoll-2026-10-28-0.3.0.md)).
+
+Migration: Ältere Vermerke ohne Prüfwert bleiben gültig, solange `generated.at` nicht jünger ist, zählen
+aber nicht als Gegenprüfung für eine Freigabe; Lint `verified_unhashed` und „Gegenprüfung ohne Prüfwert“
+im Dashboard zeigen, welche Seiten vor einer Freigabe neu gegengeprüft werden müssen.
+
 ## 0.2.0 · 28.10.2026
 
 Verhalten geändert:

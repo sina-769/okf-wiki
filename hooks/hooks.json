@@ -1,5 +1,5 @@
 {
-  "description": "okfw: Wiki-Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und Projektionen, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop mit kurzer Meldung bei Lint-Fehlern. Wirkt nur in Projekten mit wiki.toml.",
+  "description": "okfw: Wiki-Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom, Projektionen und die Vertrauensfelder status und verified der Wiki-Seiten, Ereignisprotokoll und generated bei Write/Edit, Rebuild beim Stop mit kurzer Meldung bei Lint-Fehlern. Wirkt nur in Projekten mit wiki.toml.",
   "hooks": {
     "SessionStart": [
       {
@@ -31,7 +31,7 @@
           {
             "type": "command",
             "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py\" post-edit 2>/dev/null || echo '{\"systemMessage\": \"okfw: Hook post-edit ließ sich nicht starten (uv run --script)\"}'",
-            "timeout": 10
+            "timeout": 20
           }
         ]
       }

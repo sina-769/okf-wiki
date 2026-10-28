@@ -21,9 +21,9 @@ Pflichtfelder, Ereignisort, Exporte). Ohne wiki.toml schreibt der Kern nichts.
   okfw.py capture <slug> --url URL --file PFAD[=REPO-PFAD] [--file ...] [--commit SHA]
                  [--license NAME --license-url URL] [--note N]
   okfw.py hash <pfad> [--from URL]
-  okfw.py verify <seite> --by human:<id> [--status stable] [--note N]
+  okfw.py verify <seite> [<seite> ...] --by human:<id> [--status stable] [--note N] [--force]
   okfw.py event <art> <seite> [detail] [--by AKTEUR]
-  okfw.py body <seite> <datei|->
+  okfw.py body <seite> <datei|-> | --nachziehen [--detail D]
   okfw.py sources <seite> [--add a,ID=b] [--remove c]
   okfw.py init [--profile NAME]
   okfw.py fundweg <seite> --art suche|modellvorschlag|material|person|zitatverfolgung
@@ -47,6 +47,7 @@ import html
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -63,11 +64,13 @@ from pathlib import Path
 
 import yaml
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 SKILL_DIR = Path(__file__).resolve().parent
 RESERVED = {"index.md", "log.md"}
 STATUS = ("draft", "stable", "deprecated")
 SOURCE_TYPE = "source"
+# Prüfwert des Seitenkörpers in jedem verified-Eintrag, den `verify` schreibt (Erweiterung zu OKF §5.2)
+VERIFIED_HASH = "body_sha256"
 
 MAX_FRONTMATTER_BYTES = 64 * 1024
 SLUG_RE = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
@@ -77,6 +80,9 @@ FRONTMATTER_RE = re.compile(r"---[ \t]*\n(.*?)^---[ \t]*\n?", re.S | re.M)
 LINK_RE = re.compile(r"(?<!!)\[[^\]\n]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 FOOTNOTE_REF_RE = re.compile(r"\[\^([^\]\s]+)\](?!:)")
 FOOTNOTE_DEF_RE = re.compile(r"^\[\^([^\]\s]+)\]:", re.M)
+FOOTNOTE_TEXT_RE = re.compile(r"^\[\^([^\]\s]+)\]:[ \t]*(.*)$", re.M)
+FENCE_RE = re.compile(r"```.*?```", re.S)
+LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
 CODE_RE = re.compile(r"```.*?```|`[^`\n]*`", re.S)
 H2_RE = re.compile(r"^## +(.+?)\s*$", re.M)
 CONTRADICTION_RE = re.compile(r"⚠️\s*\*\*Widerspruch:?\*\*")
@@ -109,6 +115,10 @@ DEFAULT_CONFIG = {
     # Seiten mit einem Wert aus hidden fehlen in der öffentlichen Ausgabe (dashboard --oeffentlich) ganz
     "visibility": {"field": "", "label": "Sichtbarkeit", "default": "", "hidden": [], "derive": True},
     "fundweg": {"field": "fundweg"},
+    # Freigabe: body auf einer stable-Seite setzt draft (die Freigabe gilt dem alten Inhalt)
+    # signed_human: Lint human_unsigned; human: Kennung, die „Zur Freigabe“ im Dashboard vorbelegt (human:jdoe);
+    # check_command: Aufruf der Gegenprüfung für die Liste „Gegenprüfung ohne Prüfwert“ (z. B. /pruefen)
+    "trust": {"edit_resets_stable": True, "signed_human": False, "human": "", "check_command": ""},
     # new source --doi/--pmid/--arxiv/--manuell: wohin Metadatenprüfung und Crossref-Hinweise gehen
     "sources": {"checked_field": "metadaten_geprueft", "updates_field": "crossref_hinweise",
                 "manual_csl_type": "document"},
@@ -147,6 +157,8 @@ SEVERITY = {
     # OKF §5, §7 – Herkunft, Vertrauen, Lebenszyklus
     "status_invalid": "error", "generated_invalid": "error", "verified_invalid": "error",
     "timestamp_invalid": "error", "actor_format": "warn", "stable_unverified": "warn", "stale": "warn",
+    "verified_outdated": "warn",   # bei status stable error
+    "human_without_check": "warn", "human_unsigned": "warn", "verified_unhashed": "info", "check_outdated": "info",
     "source_invalid": "error", "source_duplicate_id": "error", "source_missing": "error",
     "footnote_unsourced": "error", "footnote_undefined": "warn", "source_uncited": "info",
     # Profil aus wiki.toml
@@ -311,6 +323,12 @@ def sha256_of(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 16), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def body_sha256(body: str) -> str:
+    """Prüfwert des Markdown-Körpers ohne Frontmatter: Zeilenenden als LF, Leerzeilen an Anfang und Ende entfernt."""
+    text = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def one_line(value) -> str:
@@ -776,23 +794,44 @@ class Wiki:
         path.write_text(text[:m.start(1)] + raw + text[m.end(1):], encoding="utf-8")
         self._pages = None
 
-    def verify(self, page: str, by: str, status: str | None = None, note: str = "") -> Path:
+    def verify(self, page: str, by: str, status: str | None = None, note: str = "", force: bool = False) -> Path:
+        return self.verify_pages([page], by, status=status, note=note, force=force)[0]
+
+    def verify_pages(self, pages, by: str, status: str | None = None, note: str = "",
+                     force: bool = False) -> list[Path]:
+        """Prüfvermerk mit Prüfwert für mehrere Seiten (eine Charge), ein Ereignis je Seite.
+
+        Erst werden alle Seiten geprüft, dann geschrieben: Scheitert eine, ändert sich keine. Eine Freigabe
+        (human:, --status stable) verlangt je Seite eine Gegenprüfung durch einen anderen Akteur mit Prüfwert
+        zum jetzigen Inhalt; force schreibt trotzdem und vermerkt das im Ereignis.
+        """
         if not ACTOR_RE.match(by):
             raise WikiError("--by muss der Akteurskonvention folgen, z. B. human:<id> (OKF §7)")
         if status == "stable" and not by.startswith("human:"):
             raise WikiError("status stable nur mit --by human:<id>, also nach Prüfung durch einen Menschen; "
                             "ohne --status hält der Vermerk die Prüfung fest, ohne den Status zu heben")
-        path = self.page_path(page)
-        parsed = self.parse(path)
-        if parsed.error:
-            raise WikiError(f"Frontmatter nicht lesbar: {parsed.error}")
-        verified = as_list(parsed.fm.get("verified")) + [{"by": by, "at": now_iso()}]
-        updates = {"verified": verified}
-        if status:
-            updates["status"] = status
-        self._write_frontmatter(path, updates)
-        self.append_event("verify", parsed.id, note, by=by)
-        return path
+        targets = []
+        for page in dict.fromkeys(pages):
+            path = self.page_path(page)
+            parsed = self.parse(path)
+            if parsed.error:
+                raise WikiError(f"{parsed.id}: Frontmatter nicht lesbar: {parsed.error}")
+            targets.append((path, parsed))
+        release = status == "stable" and by.startswith("human:")
+        unchecked = [p.id for _, p in targets if release and self.release_state(p)["check"] is None]
+        if unchecked and not force:
+            raise WikiError("keine Gegenprüfung zum jetzigen Inhalt (verify durch Claude oder einen Prozess) für "
+                            + ", ".join(unchecked) + "; erst gegenprüfen lassen, oder mit --force trotzdem freigeben")
+        for path, parsed in targets:
+            verified = as_list(parsed.fm.get("verified")) + [{"by": by, "at": now_iso(),
+                                                               VERIFIED_HASH: body_sha256(parsed.body)}]
+            updates = {"verified": verified}
+            if status:
+                updates["status"] = status
+            self._write_frontmatter(path, updates)
+            detail = note + (" (freigegeben ohne Gegenprüfung, --force)" if parsed.id in unchecked else "")
+            self.append_event("verify", parsed.id, detail.strip(), by=by)
+        return [path for path, _ in targets]
 
     def generated_now(self, fm: dict | None) -> dict:
         """generated {by, at} für eine inhaltliche Änderung jetzt; weitere Schlüssel im Block bleiben."""
@@ -800,18 +839,93 @@ class Wiki:
         return {**(old if isinstance(old, dict) else {}), "by": self.actor, "at": now_iso()}
 
     def replace_body(self, page: str, body: str, detail: str = "") -> Path:
+        """Körper ersetzen und generated nachziehen. Gleicher Inhalt (gleicher Prüfwert) ändert nichts.
+
+        Auf einer stable-Seite setzt das status: draft ([trust] edit_resets_stable): Die Freigabe galt dem
+        alten Inhalt. verified bleibt stehen, das Ereignis nennt die verfallene Freigabe."""
         path = self.page_path(page)
         parsed = self.parse(path)
         text = path.read_text(encoding="utf-8")
         m = FRONTMATTER_RE.match(text)
         if not m:
             raise WikiError(f"{self.rel(path)}: kein Frontmatter")
+        if parsed.fm is not None and body_sha256(body) == body_sha256(parsed.body):
+            return path
         path.write_text(text[:m.end()] + "\n" + body.strip() + "\n", encoding="utf-8")
+        self._pages = None
+        return self.body_changed(page, detail or "Inhalt geschrieben")
+
+    def body_changed(self, page: str, detail: str) -> Path:
+        """Nach einer Änderung am Körper (body, oder Edit/Write über den PostToolUse-Hook): generated nachziehen,
+        Ereignis update. Auf einer stable-Seite, deren Freigabe nicht mehr zum Inhalt passt, status: draft
+        ([trust] edit_resets_stable); passt sie (Text wieder wie freigegeben), bleibt stable."""
+        path = self.page_path(page)
+        parsed = self.parse(path)
         if parsed.fm is not None:   # unlesbares Frontmatter bleibt unangetastet, der Lint meldet es
             self._write_frontmatter(path, {"generated": self.generated_now(parsed.fm)})
+            parsed = self.parse(path)
+            state = self.release_state(parsed)
+            if parsed.fm.get("status") == "stable" and not state["valid"] \
+                    and self.cfg["trust"].get("edit_resets_stable", True):
+                self._write_frontmatter(path, {"status": "draft"})
+                human = state["human"]
+                detail += ("; status stable → draft, Freigabe durch "
+                           + (f"{human['by']} vom {str(human['at'])[:10]} verfallen" if human else "niemanden")
+                           + ", neu prüfen und freigeben (verify)")
         self._pages = None
-        self.append_event("update", self.page_id(path), detail or "Inhalt geschrieben")
+        self.append_event("update", self.page_id(path), detail)
         return path
+
+    def release_state(self, page: Page) -> dict:
+        """Freigabe und Gegenprüfung einer Seite gegen ihren jetzigen Inhalt.
+
+        Ein verified-Eintrag gilt, solange er zum Inhalt passt: mit Prüfwert, wenn der Prüfwert gleich ist; ohne
+        Prüfwert (Eintrag aus der Zeit davor, nur Zeitvergleich), wenn weder generated.at noch ein späterer
+        Eintrag mit anderem Prüfwert eine Änderung nach ihm zeigt.
+
+        human: letzter Eintrag durch human:<id>; outdated/why: er gilt nicht mehr; valid: er gilt. check: letzter
+        gültige Eintrag eines anderen Akteurs (Claude, Prozess) mit Prüfwert, nur er zählt als Gegenprüfung für
+        eine Freigabe. machine: letzter gültige Eintrag eines anderen Akteurs, auch ohne Prüfwert; unhashed: es
+        gibt nur solche ohne Prüfwert und keine gültige Freigabe. machine_outdated: Einträge anderer Akteure, aber
+        keiner gilt. tier: Vertrauensstufe aus gültigen Einträgen (human-reviewed, machine-confirmed), sonst
+        outdated (Einträge, aber keiner gilt) oder unverified.
+        """
+        fm = page.fm or {}
+        sha = body_sha256(page.body)
+        entries = [v for v in as_list(fm.get("verified")) if isinstance(v, dict) and as_datetime(v.get("at"))]
+        gen = fm.get("generated")
+        changed = as_datetime(gen.get("at")) if isinstance(gen, dict) else None
+        mismatch = max((as_datetime(v["at"]) for v in entries if v.get(VERIFIED_HASH) and v[VERIFIED_HASH] != sha),
+                       default=None)
+
+        def why_not(v: dict, word: str) -> str:
+            if v.get(VERIFIED_HASH):
+                return "" if v[VERIFIED_HASH] == sha else f"Inhalt seit der {word} geändert (Prüfwert passt nicht)"
+            at = as_datetime(v["at"])
+            if changed and changed > at:
+                return f"generated.at jünger als die {word} (Eintrag ohne Prüfwert, nur Zeitvergleich)"
+            if mismatch and mismatch >= at:
+                return "spätere Prüfung galt anderem Inhalt (Eintrag ohne Prüfwert, nur Zeitvergleich)"
+            return ""
+
+        def latest(items):   # bei gleichem Zeitpunkt der spätere in der Liste
+            return max(reversed(items), key=lambda v: as_datetime(v["at"]), default=None)
+
+        humans = [v for v in entries if str(v.get("by", "")).startswith("human:")]
+        others = [v for v in entries if not str(v.get("by", "")).startswith("human:")]
+        human = latest(humans)
+        why = why_not(human, "Freigabe") if human else ""
+        machine = latest([v for v in others if not why_not(v, "Prüfung")])
+        check = latest([v for v in others if v.get(VERIFIED_HASH) == sha])
+        valid = bool(human) and not why
+        tier = ("human-reviewed" if valid else "machine-confirmed" if machine
+                else "outdated" if entries else "unverified")
+        last_other = latest(others)
+        return {"sha": sha, "human": human, "check": check, "outdated": bool(why), "why": why, "valid": valid,
+                "machine": machine, "unhashed": bool(machine) and not check and not valid,
+                "machine_outdated": bool(others) and not machine,
+                "machine_why": why_not(last_other, "Prüfung") if others and not machine else "", "last_other": last_other,
+                "tier": tier}
 
     def set_sources(self, page: str, add=(), remove=()) -> tuple[Path, list[str], list[str]]:
         """sources[] chirurgisch ergänzen oder kürzen: (Pfad, hinzugefügte IDs, Hinweise).
@@ -1300,8 +1414,8 @@ class Wiki:
     def lint(self) -> list[Finding]:
         findings: list[Finding] = []
 
-        def add(code, path, msg):
-            sev = self.severity(code)
+        def add(code, path, msg, sev=None):
+            sev = sev or self.severity(code)
             if sev != "off":
                 findings.append(Finding(sev, code, self.rel(path), msg))
 
@@ -1327,6 +1441,7 @@ class Wiki:
         self._lint_scope(add, pages)
         self._lint_visibility(add, pages)
         self._lint_raw(add, pages)
+        self._lint_signatures(add, pages)
         return sorted(findings, key=lambda f: (SEVERITY_ORDER.get(f.severity, 9), f.path, f.code))
 
     def _lint_reserved(self, add) -> None:
@@ -1417,6 +1532,28 @@ class Wiki:
         elif status == "stable" and not any(isinstance(v, dict) and str(v.get("by", "")).startswith("human:")
                                             for v in verified):
             add("stable_unverified", path, "status stable ohne verified-Eintrag durch human:<id>")
+        release = self.release_state(p)
+        if release["outdated"] and self.severity("verified_outdated") != "off":
+            human = release["human"]
+            msg = f"Freigabe durch {human['by']} vom {str(human['at'])[:10]} verfallen: {release['why']}"
+            if status == "stable":   # ohne eigene Schwere in [lint.severity] ein Fehler
+                add("verified_outdated", path, msg + "; status ist noch stable",
+                    self.cfg["lint"]["severity"].get("verified_outdated", "error"))
+            else:
+                add("verified_outdated", path, msg)
+        elif status == "stable" and release["human"] and release["human"].get(VERIFIED_HASH) and not release["check"]:
+            # nur Freigaben mit Prüfwert: ältere sind nicht vergleichbar und lösen hier nichts aus
+            add("human_without_check", path, f"Freigabe durch {release['human']['by']} ohne Gegenprüfung zum selben "
+                "Inhalt (verify durch Claude oder einen Prozess)")
+        if release["unhashed"]:
+            m = release["machine"]
+            add("verified_unhashed", path, f"Gegenprüfung durch {m['by']} vom {str(m['at'])[:10]} ohne Prüfwert "
+                f"({VERIFIED_HASH}): gilt weiter, zählt aber nicht als Gegenprüfung für eine Freigabe; neu "
+                "gegenprüfen lassen und mit verify vermerken")
+        elif release["machine_outdated"] and not release["human"]:
+            m = release["last_other"]
+            add("check_outdated", path, f"Gegenprüfung durch {m['by']} vom {str(m['at'])[:10]} verfallen: "
+                f"{release['machine_why']}")
         if "stale_after" in fm:
             stale = as_datetime(fm["stale_after"])
             if stale is None:
@@ -1773,6 +1910,52 @@ class Wiki:
                 out.append({"path": str(ft["path"]), "tracked": bool(tracked) and str(ft["path"]) in tracked})
         return out
 
+    def _lint_signatures(self, add, pages) -> None:
+        """[trust] signed_human: Jeder verified-Eintrag durch human:<id> kam mit einem signierten Commit ins Wiki
+        (git blame je Seite, Signatur über %G?: G oder U). Ohne Git-Repo oder ohne Opt-in läuft nichts."""
+        if not self.cfg["trust"].get("signed_human") or self.severity("human_unsigned") == "off" \
+                or self._git_tracked() is None:
+            return
+        found = []   # (Seite, Eintrag, Commit oder None)
+        for p in pages:
+            humans = [v for v in as_list((p.fm or {}).get("verified")) if isinstance(v, dict) and v.get("at")
+                      and str(v.get("by", "")).startswith("human:")]
+            if not humans:
+                continue
+            lines = self._blame(p.path)
+            for v in humans:
+                at, by = str(v["at"]), str(v["by"])
+                hits = [c for c, line in lines if at in line and by in line] or [c for c, line in lines if at in line]
+                found.append((p, v, hits[0] if hits else None))
+        commits = sorted({c for _, _, c in found if c and c.strip("0")})
+        signed = {}
+        if commits:
+            out = subprocess.run(["git", "-C", str(self.root), "log", "--no-walk", "--format=%H %G?", *commits],
+                                 capture_output=True, text=True, timeout=60)
+            signed = dict(line.split(" ", 1) for line in out.stdout.splitlines() if " " in line)
+        for p, v, commit in found:
+            mark = signed.get(commit or "", "")
+            if mark in ("G", "U"):
+                continue
+            where = ("noch nicht committet" if not commit or not commit.strip("0")
+                     else f"aus Commit {commit[:10]} ohne gültige Signatur (%G? {mark or '?'})")
+            add("human_unsigned", p.path, f"Freigabe durch {v['by']} vom {str(v['at'])[:10]} {where}")
+
+    def _blame(self, path: Path) -> list[tuple[str, str]]:
+        """(Commit, Zeile) je Zeile der Datei laut git blame; nicht committete Zeilen mit Commit 000…; [] bei Fehler."""
+        try:
+            out = subprocess.run(["git", "-C", str(self.root), "blame", "--porcelain", "--", str(path)],
+                                 capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return []
+        rows, commit = [], ""
+        for line in out.stdout.splitlines() if out.returncode == 0 else []:
+            if line.startswith("\t"):
+                rows.append((commit, line[1:]))
+            elif re.match(r"[0-9a-f]{40} \d+ \d+", line):
+                commit = line.split(" ", 1)[0]
+        return rows
+
     def _git_tracked(self) -> set[str] | None:
         """Von Git versionierte Dateien relativ zum Projektordner; None ohne Git."""
         if not hasattr(self, "_tracked"):
@@ -2084,7 +2267,8 @@ class Wiki:
     def dashboard_data(self) -> dict:
         """Was das Dashboard zum inhaltlichen Erkunden braucht: Seiten mit Vorschau und Kategorien, Kanten.
 
-        Bewusst ohne Lint-Befunde und Prüfstatus; dafür gibt es `lint` und `status`. Dateipfade stehen nur als
+        Bewusst ohne Lint-Befunde und Prüfstatus (dafür gibt es `lint` und `status`), außer der Freigabe gegen
+        den jetzigen Inhalt, und die nur in der normalen Ausgabe. Dateipfade stehen nur als
         Ablageort der Volltexte einer Quelle darin (`stored`, mit Git-Status), und nur in der normalen Ausgabe.
         """
         edges = self.edges()
@@ -2134,6 +2318,12 @@ class Wiki:
                 "excerpt": reader[p.id]["excerpt"], "outline": reader[p.id]["outline"],
                 "refs": reader[p.id]["refs"], "apa": reader[p.id]["apa"], "open": reader[p.id]["open"],
                 "updated": str((fm.get("generated") or {}).get("at", ""))[:10] if isinstance(fm.get("generated"), dict) else "",
+                # Freigabe gegen den jetzigen Inhalt: valid, outdated (verfallen) oder leer; trust: Vertrauensstufe
+                # aus gültigen Vermerken (outdated = Vermerke, aber keiner passt). Beides nur in der normalen Ausgabe
+                **({"release": "", "trust": ""} if self.public or p.fm is None else
+                   {"release": "outdated" if (st := self.release_state(p))["outdated"] else "valid" if st["valid"] else "",
+                    "trust": st["tier"]}),
+                "stable": fm.get("status") == "stable",
             })
         types, labels = self.types, self.cfg.get("labels", {})
         scope_values = self.scope_values() or sorted({v for v, _ in scopes.values()})
@@ -2167,7 +2357,83 @@ class Wiki:
             "rights_matrix": {cls: [[a, *row[a]] for a in RIGHTS_ACTIONS] for cls, row in self.rights_matrix().items()},
             "nodes": nodes,
             "edges": [{"s": p.id, "t": q.id, "kind": kind} for p, q, kind in edges],
+            "release": None if self.public else self.release_queue(),
         }
+
+    def release_queue(self) -> dict:
+        """„Zur Freigabe“ im Dashboard: Seiten mit Gegenprüfung zum jetzigen Inhalt, aber ohne gültige Freigabe
+        durch einen Menschen (mit belegten Aussagen und der Notiz der Gegenprüfung), verfallene Freigaben ohne
+        neue Gegenprüfung und Seiten, deren Gegenprüfung keinen Prüfwert hat (unhashed, Lint verified_unhashed).
+        command ist der Anfang des verify-Aufrufs, human die Kennung aus [trust] human, sonst die häufigste;
+        check_command der Aufruf der Gegenprüfung aus [trust] check_command (leer: Hinweis auf den Ablauf)."""
+        events: dict[tuple, list] = {}
+        for e in self.read_events():
+            if e.get("kind") == "verify" and as_datetime(e.get("ts")):
+                events.setdefault((e.get("page"), e.get("by")), []).append(e)
+
+        def note_of(pid: str, entry: dict) -> str:
+            # die Notiz steht im Ereignis, nicht im verified-Eintrag: das Ereignis zum selben Zeitpunkt
+            at = as_datetime(entry["at"])
+            gap = lambda e: abs((as_datetime(e["ts"]) - at).total_seconds())
+            best = min(reversed(events.get((pid, entry["by"]), [])), key=gap, default=None)   # Gleichstand: das spätere
+            return str(best.get("detail") or "") if best and gap(best) <= 300 else ""
+
+        pending, outdated, unhashed, humans = [], [], [], Counter()
+        for p in self.pages():
+            if p.fm is None or p.fm.get("status") == "deprecated":
+                continue
+            humans.update(str(v["by"]) for v in as_list(p.fm.get("verified"))
+                          if isinstance(v, dict) and str(v.get("by", "")).startswith("human:"))
+            state = self.release_state(p)
+            if state["check"] and not state["valid"]:
+                pending.append({"id": p.id, "check_by": str(state["check"]["by"]),
+                                "check_at": str(state["check"]["at"])[:10], "note": note_of(p.id, state["check"]),
+                                "renew": state["outdated"], "claims": self.claims_of(p)})
+            elif state["outdated"]:
+                outdated.append({"id": p.id, "by": str(state["human"]["by"]), "at": str(state["human"]["at"])[:10],
+                                 "why": state["why"]})
+            if state["unhashed"]:
+                unhashed.append({"id": p.id, "by": str(state["machine"]["by"]), "at": str(state["machine"]["at"])[:10]})
+        human = str(self.cfg["trust"].get("human") or "")
+        if not (human.startswith("human:") and ACTOR_RE.match(human)):
+            human = humans.most_common(1)[0][0] if humans else ""
+        return {"command": f"{self.cli_prefix()} verify", "human": human, "actor": self.actor,
+                "check_command": str(self.cfg["trust"].get("check_command") or ""),
+                "pending": pending, "outdated": outdated, "unhashed": unhashed}
+
+    def claims_of(self, page: Page) -> list[dict]:
+        """Belegte Aussagen: Absätze und Listenpunkte mit Fußnote (ohne Codeblöcke), Links als Text, je mit dem
+        Text ihrer Fußnoten (Quelle und Fundstelle)."""
+        def plain(text: str) -> str:
+            text = re.sub(r"(?<!!)\[([^\]\n]*)\]\([^)\s]+(?:\s+\"[^\"]*\")?\)", r"\1", text)
+            return one_line(re.sub(r"\*\*|__", "", text))
+
+        body = FENCE_RE.sub("", page.body)
+        notes = {label: plain(text) for label, text in FOOTNOTE_TEXT_RE.findall(body)}
+        items: list[str] = []
+        for block in re.split(r"\n\s*\n", FOOTNOTE_TEXT_RE.sub("", body)):
+            for line in block.splitlines():
+                line = re.sub(r"^\s*>\s?", "", line)
+                if LIST_ITEM_RE.match(line) or not items or line.lstrip().startswith("#"):
+                    items.append(LIST_ITEM_RE.sub("", line))
+                else:
+                    items[-1] += " " + line
+            items.append("")   # Blockende: der nächste Block beginnt eine neue Aussage
+        claims = []
+        for item in items:
+            labels = list(dict.fromkeys(FOOTNOTE_REF_RE.findall(item)))
+            if labels and not item.lstrip().startswith("#"):
+                claims.append({"text": plain(item), "notes": [[label, notes.get(label, "")] for label in labels]})
+        return claims
+
+    def cli_prefix(self) -> str:
+        """Aufruf des Kerns mit --root zum Kopieren, Pfade unter dem Home-Ordner mit ~."""
+        def short(path: Path) -> str:
+            path, home = path.resolve(), Path.home().resolve()
+            if path.is_relative_to(home) and re.fullmatch(r"[\w./-]+", rel := path.relative_to(home).as_posix()):
+                return f"~/{rel}"
+            return shlex.quote(str(path))
+        return f"uv run --quiet {short(SKILL_DIR / 'okfw.py')} --root {short(self.root)}"
 
     def dashboard_title(self) -> str:
         """Wiki-Titel ohne den Index-Zusatz „– zuerst lesen“; der gehört in index.md, nicht ins Dashboard."""
@@ -2401,6 +2667,7 @@ class Wiki:
         by_type: Counter = Counter()
         tiers: Counter = Counter()
         drafts = stale = todos = 0
+        release: Counter = Counter()
         now = dt.datetime.now(dt.timezone.utc)
         for p in self.pages():
             fm = p.fm or {}
@@ -2409,9 +2676,16 @@ class Wiki:
             when = as_datetime(fm.get("stale_after"))
             stale += bool(when and now >= when)
             todos += CODE_RE.sub("", p.body).count("[!todo]")   # Marker in Code-Spannen und -Blöcken zählen nicht
-            actors = [str(v.get("by", "")) for v in as_list(fm.get("verified")) if isinstance(v, dict)]
-            tiers["human-reviewed" if any(a.startswith("human:") for a in actors)
-                  else "machine-confirmed" if actors else "unverified"] += 1
+            # Vertrauensstufe nur aus Vermerken, die zum jetzigen Inhalt passen; verfallene zählen getrennt
+            state = self.release_state(p) if p.fm is not None else None
+            tiers[state["tier"] if state else "unverified"] += 1
+            if state:
+                release["valid"] += state["valid"]
+                release["outdated"] += state["outdated"]
+                release["stable_outdated"] += state["outdated"] and fm.get("status") == "stable"
+                if fm.get("status") != "deprecated":   # wie „Zur Freigabe“ im Dashboard
+                    release["pending"] += bool(state["check"]) and not state["valid"]
+                    release["unhashed"] += state["unhashed"]
         pending = []
         if self.raw and self.raw.is_dir():
             linked = {str((p.fm or {}).get("raw_packet", "")).rstrip("/") for p in self.pages()}
@@ -2425,7 +2699,9 @@ class Wiki:
                 fundweg.update([e["art"] for e in self.fundweg_of(q) if e.get("art")][:1] or ["fehlt"])
         scope = Counter(v for v, _ in self.scopes().values())
         return {"bundle": self.rel(self.bundle), "pages": len(self.pages()), "by_type": dict(sorted(by_type.items())),
-                "draft": drafts, "stale": stale, "todo": todos, "trust": dict(tiers), "raw_pending": pending,
+                "draft": drafts, "stale": stale, "todo": todos, "raw_pending": pending,
+                "trust": {k: n for k, n in tiers.items() if k != "outdated"}, "trust_outdated": tiers["outdated"],
+                "release": {k: release[k] for k in ("valid", "outdated", "stable_outdated", "pending", "unhashed")},
                 "events": len(events), "last_event": events[-1].get("ts", "") if events else "",
                 "fundweg": dict(fundweg), "scope": dict(scope), "hidden": len(self.hidden_ids())}
 
@@ -2609,6 +2885,10 @@ def cmd_status(wiki: Wiki, args) -> int:
             f"Rohquellen ohne Quellenkarte: {', '.join(s['raw_pending'])}." if s["raw_pending"] else "",
             f"{s['hidden']} Seiten nicht öffentlich ([visibility]); öffentliche Seiten nicht auf sie verweisen lassen."
             if s["hidden"] else "",
+            f"{s['release']['stable_outdated']} Seiten stable, seit Änderung ungeprüft (lint: verified_outdated)."
+            if s["release"]["stable_outdated"] else "",
+            f"{s['release']['pending']} Seiten gegengeprüft und zur Freigabe durch einen Menschen (Dashboard „Zur Freigabe“)."
+            if s["release"]["pending"] else "",
             f"Vor inhaltlicher Arbeit {wiki.rel(wiki.bundle)}/index.md lesen und im Wiki suchen.",
             f"Nicht direkt bearbeiten: {', '.join(protected_paths(wiki))}.",
             f"Werkzeug: uv run --quiet {SKILL_DIR / 'okfw.py'} (new, capture, verify, lint vor Abschluss).",
@@ -2620,7 +2900,16 @@ def cmd_status(wiki: Wiki, args) -> int:
     print(f"Bundle: {s['bundle']} ({s['pages']} Seiten)")
     print("Seiten nach Typ: " + ", ".join(f"{k} {v}" for k, v in s["by_type"].items()))
     print(f"draft: {s['draft']} · veraltet: {s['stale']} · offene [!todo]: {s['todo']}")
-    print("Vertrauen: " + ", ".join(f"{k} {v}" for k, v in sorted(s["trust"].items())))
+    print("Vertrauen: " + ", ".join(f"{k} {v}" for k, v in sorted(s["trust"].items()))
+          + (f" · {s['trust_outdated']} verfallen" if s["trust_outdated"] else ""))
+    rel = s["release"]
+    if rel["valid"] or rel["outdated"] or rel["pending"]:
+        print(f"Freigaben: {rel['valid']} gültig · {rel['outdated']} verfallen"
+              + (f" (davon {rel['stable_outdated']} stable, seit Änderung ungeprüft)" if rel["stable_outdated"] else "")
+              + f" · {rel['pending']} zur Freigabe")
+    if rel["unhashed"]:
+        print(f"Gegenprüfung ohne Prüfwert: {rel['unhashed']} Seiten (zählen nicht für eine Freigabe; "
+              "lint verified_unhashed)")
     if wiki.raw:
         print("Rohquellen ohne Karte: " + (", ".join(s["raw_pending"]) or "keine"))
     if s["scope"]:
@@ -2744,8 +3033,14 @@ def cmd_hash(wiki: Wiki, args) -> int:
 
 
 def cmd_verify(wiki: Wiki, args) -> int:
-    path = wiki.verify(args.page, args.by, status=args.status, note=args.note or "")
-    print(f"verifiziert: {wiki.page_id(path)} durch {args.by}")
+    release = args.status == "stable" and args.by.startswith("human:")
+    unchecked = [p for p in args.pages if release and wiki.release_state(wiki.parse(wiki.page_path(p)))["check"] is None]
+    paths = wiki.verify_pages(args.pages, args.by, status=args.status, note=args.note or "", force=args.force)
+    for path in paths:
+        print(f"verifiziert: {wiki.page_id(path)} durch {args.by}" + (f", status {args.status}" if args.status else ""))
+    if unchecked:
+        print(f"Achtung: freigegeben ohne Gegenprüfung zum jetzigen Inhalt (--force): {', '.join(unchecked)}",
+              file=sys.stderr)
     return 0
 
 
@@ -2755,9 +3050,25 @@ def cmd_event(wiki: Wiki, args) -> int:
 
 
 def cmd_body(wiki: Wiki, args) -> int:
+    if args.nachziehen == (args.file is not None):
+        raise WikiError("body braucht genau eins: <datei|-> oder --nachziehen")
+    before = wiki.parse(wiki.page_path(args.page))
+    if args.nachziehen:
+        path = wiki.body_changed(args.page, args.detail or "Körper geändert")
+        after = wiki.parse(path)
+        print(f"nachgezogen: {wiki.rel(path)} (generated durch {wiki.actor})")
+        if (before.fm or {}).get("status") == "stable" and (after.fm or {}).get("status") == "draft":
+            print("  status stable → draft: die Freigabe galt dem alten Inhalt; neu prüfen und mit verify freigeben")
+        return 0
     body = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
     path = wiki.replace_body(args.page, body, args.detail or "")
+    after = wiki.parse(path)
+    if after.raw_fm == before.raw_fm and after.body == before.body:
+        print(f"unverändert: {wiki.rel(path)} (gleicher Inhalt)")
+        return 0
     print(f"aktualisiert: {wiki.rel(path)}")
+    if (before.fm or {}).get("status") == "stable" and (after.fm or {}).get("status") == "draft":
+        print("  status stable → draft: die Freigabe galt dem alten Inhalt; neu prüfen und mit verify freigeben")
     return 0
 
 
@@ -3014,11 +3325,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from", dest="retrieved_from")
     p.set_defaults(func=cmd_hash)
 
-    p = sub.add_parser("verify", help="Prüfvermerk eintragen (OKF §5.2)")
-    p.add_argument("page", help="Konzept-ID, z. B. concepts/local-tool")
+    p = sub.add_parser("verify", help="Prüfvermerk eintragen (OKF §5.2), auch für mehrere Seiten")
+    p.add_argument("pages", nargs="+", metavar="page", help="Konzept-IDs, z. B. concepts/local-tool")
     p.add_argument("--by", required=True)
     p.add_argument("--status", choices=STATUS)
-    p.add_argument("--note")
+    p.add_argument("--note", help="Notiz für alle Seiten, z. B. „Charge 3“")
+    p.add_argument("--force", action="store_true", help="freigeben, auch ohne Gegenprüfung zum jetzigen Inhalt")
     p.set_defaults(func=cmd_verify)
 
     p = sub.add_parser("event", help="Ereignis anhängen")
@@ -3030,7 +3342,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("body", help="Körper einer Seite ersetzen, Frontmatter bleibt byte-genau")
     p.add_argument("page")
-    p.add_argument("file", help="Markdown-Datei, - für stdin")
+    p.add_argument("file", nargs="?", help="Markdown-Datei, - für stdin")
+    p.add_argument("--nachziehen", action="store_true",
+                   help="Körper ist schon geändert (Edit/Write): nur generated nachziehen, stable wie bei body")
     p.add_argument("--detail")
     p.set_defaults(func=cmd_body)
 

@@ -18,10 +18,12 @@ class StableNurDurchMenschen(WikiTest):
         self.assertNotIn("verified", fm)
 
     def test_verify_stable_mit_human(self):
+        # seit der Gegenprüfungspflicht: erst Claude (oder ein Prozess) zum selben Inhalt, dann der Mensch
+        self.core("verify", "sources/q1", "--by", "claude-code/claude-opus-5-5")
         self.core("verify", "sources/q1", "--by", "human:pruefer", "--status", "stable")
         fm = self.fm("sources/q1")
         self.assertEqual(fm["status"], "stable")
-        self.assertEqual(fm["verified"][0]["by"], "human:pruefer")
+        self.assertEqual(fm["verified"][1]["by"], "human:pruefer")
         self.assertNotIn("stable_unverified", self.lint_codes("sources/q1"))
 
     def test_verify_ohne_status_durch_claude_bleibt_erlaubt(self):

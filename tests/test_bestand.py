@@ -71,6 +71,7 @@ class Ablauf(WikiTest):
                                 "tool_input": {"file_path": karte}})
         zeilen = events.read_text(encoding="utf-8").splitlines()
         self.assertEqual(len(zeilen), vorher + 1)
-        self.assertEqual(json.loads(zeilen[-1])["by"], "process:claude-code-hook")
+        # ohne Vorher-Stand gilt der Körper als geändert: der Kern zieht generated nach und schreibt update
+        self.assertEqual(json.loads(zeilen[-1])["kind"], "update")
         self.assertEqual(self.hook("stop", {"hook_event_name": "Stop"}).stdout, "")
         self.core("rebuild", "--check")

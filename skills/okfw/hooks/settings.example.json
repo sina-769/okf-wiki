@@ -30,7 +30,7 @@
           {
             "type": "command",
             "command": "uv run --quiet --script \"$HOME/.claude/skills/okfw/hooks/okf_hook.py\" post-edit 2>/dev/null || echo '{\"systemMessage\": \"okfw: Hook post-edit ließ sich nicht starten (uv run --script)\"}'",
-            "timeout": 10
+            "timeout": 20
           }
         ]
       }

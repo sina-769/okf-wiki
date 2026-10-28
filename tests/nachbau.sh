@@ -6,8 +6,8 @@
 # <marketplace-quelle> ist alles, was `claude plugin marketplace add` versteht (Ordner mit
 # .claude-plugin/marketplace.json, Git-URL, owner/repo). Der Test installiert das Plugin daraus, legt
 # ein Demo-Wiki aus zwei frei lizenzierten Quellen an (OKF-v0.2-Spezifikation, Apache-2.0; README von
-# pi-llm-wiki, MIT), erfasst beide als Rohquellen, schreibt Karten, führt rebuild, lint und dashboard aus
-# und ruft die Hooks so auf, wie Claude Code sie aus hooks/hooks.json startet. Jeder Schritt steht mit
+# pi-llm-wiki, MIT), erfasst beide als Rohquellen, schreibt Karten, führt rebuild, lint und dashboard aus,
+# prüft die Freigabe (Ablehnung ohne Gegenprüfung, Rückfall nach body) und ruft die Hooks so auf, wie Claude Code sie aus hooks/hooks.json startet. Jeder Schritt steht mit
 # Befehl, Ausgabe und Exit-Code in <ausgabeordner>/protokoll.md.
 #
 # Braucht: bash, git, curl, claude (Claude Code), uv. Netz: GitHub-API (Quellen), PyPI und die
@@ -207,6 +207,21 @@ step "dashboard" "uv run --quiet '$K' dashboard && ls -l build/wiki-dashboard.ht
   && echo 'lädt nichts aus dem Netz nach (kein script/img/iframe/link/url() auf http)'"
 step "Rohquelle bleibt unverändert (SHA-256)" "sha_ok $OKF_SHA raw/okf-v0-2-spec/original/SPEC.md \
   && sha_ok $PI_SHA raw/pi-llm-wiki/original/README.md"
+
+log "## Freigabe"
+log ""
+KARTE=wiki/concepts/llm-wiki-im-okf.md
+step "Freigabe ohne Gegenprüfung wird abgelehnt" "out=\$(uv run --quiet '$K' verify concepts/llm-wiki-im-okf \
+  --by human:nachbau --status stable 2>&1); rc=\$?; echo \"\$out\"; echo \"Exit \$rc\"; test \$rc -ne 0 \
+  && grep -q 'keine Gegenprüfung' <<< \"\$out\" && grep '^status:' $KARTE && grep -q '^status: draft' $KARTE"
+step "Freigabe nach Gegenprüfung, Rückfall nach body (stable → draft)" "uv run --quiet '$K' verify concepts/llm-wiki-im-okf \
+  --by claude-code/nachbau --note 'Gegenprüfung im Nachbau' \
+  && uv run --quiet '$K' verify concepts/llm-wiki-im-okf --by human:nachbau --status stable --note 'Charge Nachbau' \
+  && grep -q '^status: stable' $KARTE && grep -c 'body_sha256' $KARTE | sed 's/^/Vermerke mit Prüfwert: /' \
+  && { cat '$WORK/konzept.md'; echo; echo 'Ein Satz nach der Freigabe.'; } | uv run --quiet '$K' body concepts/llm-wiki-im-okf - \
+  && grep '^status:' $KARTE && grep -q '^status: draft' $KARTE \
+  && uv run --quiet '$K' lint --json | grep -o '\"code\": \"verified_outdated\"' \
+  && uv run --quiet '$K' status | grep -E '^(Vertrauen|Freigaben):'"
 
 log "## Hooks, wie Claude Code sie aus dem Plugin startet"
 log ""

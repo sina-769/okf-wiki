@@ -50,7 +50,7 @@ Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nim
 
 | Befehl | Zweck |
 |---|---|
-| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]` (ohne Code), Vertrauensstufen, Rohquellen ohne Karte, Umfang, Fundweg, Zahl der Ereignisse und Zeitpunkt des letzten; `--hook` gibt SessionStart-JSON aus |
+| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]` (ohne Code), Vertrauensstufen, gültige und verfallene Freigaben (davon „stable, seit Änderung ungeprüft“), Rohquellen ohne Karte, Umfang, Fundweg, Zahl der Ereignisse und Zeitpunkt des letzten; `--hook` gibt SessionStart-JSON aus |
 | `lint [--strict] [--json] [--summary]` | OKF-Konformität und Profilregeln; Exit 1 bei Fehlern (mit `--strict` auch bei Warnungen) |
 | `rebuild [--check] [--quiet \| --hook]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts; `--hook` (Stop-Hook) erzeugt still neu und meldet Lint-Fehler als eine Zeile (`systemMessage`), ohne zu blockieren |
 | `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` (mit `--set raw_packet=…` die Lizenz aus dessen `manifest.json`, `via: capture`) und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
@@ -58,14 +58,14 @@ Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nim
 | `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt; zieht `generated` nach |
 | `capture <slug> --url … --file PFAD[=REPO-PFAD] … [--source-path] [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444); Symlinks werden abgelehnt. `--file` mehrfach, je Datei mit ihrem Pfad im Quell-Repository (`--file /tmp/x/hooks.json=hooks/hooks.json`); `--source-path` gilt für Dateien ohne eigenen. `--commit` warnt, wenn es kein voller SHA ist. Prüft vorher „Volltext lokal ablegen“ für die Lizenz aus `--license`/`--license-url`: nicht erlaubt → Abbruch, erst fragen oder Auflage → Warnung (ohne `--license` gilt die Lizenz als unbekannt) |
 | `hash <pfad> [--from URL]` (Alias `sha`) | `fulltext`-Block für Karten ohne Rohquellen-Paket |
-| `verify <seite> --by human:<id> [--status stable] [--note]` | Prüfvermerk nach OKF §5.2; ändert nur `verified` und `status`, alles andere bleibt byte-genau. `--status stable` nur mit einem `human:`-Akteur, sonst Abbruch |
+| `verify <seite> [<seite> …] --by human:<id> [--status stable] [--note] [--force]` | Prüfvermerk nach OKF §5.2 mit Prüfwert des Seitenkörpers (`body_sha256`, siehe [Freigabe](#freigabe-über-claude)) für eine oder mehrere Seiten (eine Charge), `--note` für alle, ein Ereignis je Seite; ändert nur `verified` und `status`, alles andere bleibt byte-genau. `--status stable` nur mit einem `human:`-Akteur und nur, wenn jede Seite eine Gegenprüfung durch einen anderen Akteur mit Prüfwert zum jetzigen Inhalt hat; sonst Abbruch ohne Änderung, `--force` gibt trotzdem frei und vermerkt das im Ereignis |
 | `event <art> <seite> [detail] [--by]` | Ereignis anhängen |
-| `body <seite> <datei\|->` | Körper ersetzen; im Frontmatter ändert sich nur `generated {by, at}` |
+| `body <seite> <datei\|->` · `body <seite> --nachziehen` | Körper ersetzen; im Frontmatter ändert sich nur `generated {by, at}`, auf einer stable-Seite, deren Freigabe nicht mehr zum Inhalt passt, dazu `status: draft` (`[trust] edit_resets_stable`; `verified` bleibt stehen, das Ereignis nennt die verfallene Freigabe). Gleicher Inhalt (gleicher Prüfwert) ändert nichts. `--nachziehen`: der Körper ist schon geändert (Edit oder Write, ruft der PostToolUse-Hook auf), nur `generated` und `status` wie eben |
 | `sources <seite> [--add a,b] [--remove c]` (Alias `quellen`) | `sources[]` chirurgisch ergänzen oder kürzen, zieht `generated` nach und gibt die Fußnotenzeilen für den Text aus. `--add ID=SLUG` legt eine weitere Fußnote auf dieselbe Karte an (eigene Fundstelle). `--remove` nur, wenn der Text `[^id]` nicht mehr zitiert |
 | `init [--profile NAME]` | `wiki.toml` aus `profiles/NAME.toml`, Ordner, erstes Ereignis |
 | `rechte [<seite>] [--aktion A] [--json]` (Alias `rights`) | Lizenzen und Nutzungsrechte: Übersicht je Lizenzklasse, eine Quelle im Detail oder alle Quellen nach einem Recht gruppiert (`--aktion abbildung`) |
 | `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch, zieht `generated` nach und protokolliert |
-| `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` |
+| `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen, „Zur Freigabe“ und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` |
 
 ## wiki.toml
 
@@ -145,6 +145,12 @@ checked_field = "metadaten_geprueft"   # Metadatenabgleich {by: process:crossref
 updates_field = "crossref_hinweise"    # Crossref updated-by (Rückzug, Korrektur), erscheint auch im Text
 manual_csl_type = "document"    # CSL-Typ bei --manuell ohne --csl-typ (z. B. legislation für Gesetze)
 
+[trust]                         # Freigabe (siehe „Freigabe über Claude“)
+edit_resets_stable = true       # body auf einer stable-Seite setzt status: draft
+signed_human = false            # true: Lint human_unsigned prüft die Commit-Signatur jeder human:-Freigabe (nur mit Git)
+human = "human:jdoe"            # Kennung, die „Zur Freigabe“ im Dashboard vorbelegt (sonst die häufigste im Wiki)
+check_command = "/pruefen"      # Aufruf der Gegenprüfung für „Gegenprüfung ohne Prüfwert“ (sonst ein Hinweis an Claude)
+
 [licenses.patterns]             # weitere Muster (regulärer Ausdruck auf Name oder URL) = Lizenzklasse
 "example\\.org" = "vorbehalten"
 
@@ -180,9 +186,11 @@ kernaussagen = "> [!todo] …"
 ## Gemeinsames Frontmatter-Profil
 
 Fest im Kern (OKF v0.2): `type` Pflicht; `status` ∈ draft | stable | deprecated; `generated {by, at}`
-und `verified [{by, at}]` mit Akteurskonvention `<producer>/<version>`, `human:<id>`, `process:<id>`
+und `verified [{by, at, body_sha256}]` mit Akteurskonvention `<producer>/<version>`, `human:<id>`, `process:<id>`
 und ISO-8601-Zeitpunkt mit Offset; `stale_after` als Zeitpunkt; `sources [{id, resource}]`;
-Fußnotenlabel = `sources[].id`. Zeitstempel bleiben beim Lesen Strings (kein Umbau zu `datetime`),
+Fußnotenlabel = `sources[].id`. `body_sha256` in `verified` ist eine Erweiterung von okfw (OKF §5.2 kennt nur
+`by` und `at`; zusätzliche Schlüssel erlaubt §4.1): SHA-256 des Markdown-Körpers ohne Frontmatter, Zeilenenden als
+LF, Leerzeilen an Anfang und Ende entfernt. Andere OKF-Werkzeuge lesen den Eintrag weiter als `{by, at}`. Zeitstempel bleiben beim Lesen Strings (kein Umbau zu `datetime`),
 YAML-Anker und -Aliase sind verboten.
 
 Quellenkarten (`type: source`) zusätzlich, wenn vorhanden: `access`; `raw_packet` (Pfad zum
@@ -246,7 +254,8 @@ Eine JSON-Zeile je Ereignis, nur anhängen:
 
 `page` ist die Konzept-ID (Pfad im Bundle ohne `.md`), `raw/<slug>` für Rohquellen, `.` für das ganze
 Bundle. Arten: `init`, `capture`, `create`, `update`, `verify`, `deprecate`, `delete`, `merge`, `note`;
-der PostToolUse-Hook schreibt `write`/`edit` mit `by: process:claude-code-hook`, im Log daraus
+der PostToolUse-Hook schreibt nach einem Edit oder Write, der den Körper geändert hat, über `body --nachziehen`
+ein `update` mit dem Akteur aus `[wiki] actor`, sonst `write`/`edit` mit `by: process:claude-code-hook`; im Log daraus
 „Erstellt“ (erstes Ereignis einer Seite) bzw. „Aktualisiert“. Ältere Formen werden gelesen, nie
 umgeschrieben: `creation`, fehlendes `by`, `page` als bloßer Slug (wird über den Dateinamen aufgelöst).
 
@@ -255,8 +264,8 @@ umgeschrieben: `creation`, fehlendes `by`, `page` als bloßer Slug (wird über d
 | Schwere | Codes |
 |---|---|
 | error | `bundle_missing`, `frontmatter_invalid`, `missing_type`, `root_index_frontmatter`, `index_frontmatter`, `log_frontmatter`, `log_date_heading`, `status_invalid`, `generated_invalid`, `verified_invalid`, `timestamp_invalid`, `source_invalid`, `source_duplicate_id`, `source_missing`, `footnote_unsourced`, `missing_required`, `enum_invalid`, `raw_missing`, `raw_tampered`, `fulltext_tampered`, `citation_with_claims`, `csl_incomplete`, `fundweg_invalid` |
-| warn | `okf_version_missing`, `log_order`, `actor_format`, `stable_unverified`, `stale`, `footnote_undefined`, `missing_recommended`, `type_folder_mismatch`, `path_not_kebab`, `sections_missing`, `no_footnotes`, `broken_link`, `link_leaves_bundle`, `few_links`, `orphan`, `projection_stale`, `fulltext_absent`, `fulltext_unanchored`, `claim_on_citation_only`, `priority_citation_only`, `source_undated`, `license_missing`, `fulltext_rights`, `fulltext_shared`, `scope_missing`, `visibility_leak`, `fundweg_incomplete` |
-| info | `source_uncited`, `type_unknown`, `contradiction_one_sided`, `projection_unavailable`, `raw_uningested`, `license_unknown`, `license_unclassified`, `fundweg_missing` |
+| warn | `okf_version_missing`, `log_order`, `actor_format`, `stable_unverified`, `verified_outdated` (bei stable error), `human_without_check`, `human_unsigned`, `stale`, `footnote_undefined`, `missing_recommended`, `type_folder_mismatch`, `path_not_kebab`, `sections_missing`, `no_footnotes`, `broken_link`, `link_leaves_bundle`, `few_links`, `orphan`, `projection_stale`, `fulltext_absent`, `fulltext_unanchored`, `claim_on_citation_only`, `priority_citation_only`, `source_undated`, `license_missing`, `fulltext_rights`, `fulltext_shared`, `scope_missing`, `visibility_leak`, `fundweg_incomplete` |
+| info | `verified_unhashed`, `check_outdated`, `source_uncited`, `type_unknown`, `contradiction_one_sided`, `projection_unavailable`, `raw_uningested`, `license_unknown`, `license_unclassified`, `fundweg_missing` |
 
 Umfang, Sichtbarkeit und Fundweg: `scope_missing` = Seite ohne Umfangsfeld (bei Quellen nur, wenn sich nichts
 ableiten lässt); ungültige Werte meldet `enum_invalid`, auch für das Sichtbarkeitsfeld.
@@ -274,13 +283,71 @@ ungeklärt ist; `fulltext_shared` = Volltext von Git versioniert, obwohl die Liz
 erlaubt (Git-Status über `git ls-files`).
 
 Vertrauen: `stable_unverified` = `status: stable` ohne `verified`-Eintrag eines Menschen (`human:<id>`);
-ein Vermerk durch Claude oder einen Prozess reicht dafür nicht.
+ein Vermerk durch Claude oder einen Prozess reicht dafür nicht. `verified_outdated` = die letzte Freigabe
+durch `human:<id>` gilt nicht mehr dem jetzigen Inhalt: ihr Prüfwert passt nicht mehr, oder sie hat keinen
+(Eintrag aus der Zeit vor dem Prüfwert, nicht vergleichbar) und `generated.at` ist jünger als ihr `at`.
+Warnung, bei `status: stable` Fehler (eigene Schwere in `[lint.severity]` gilt für beides). Mit Prüfwert
+entscheidet nur er: `lizenz`, `fundweg` und `sources` ziehen `generated` nach, ändern aber den geprüften Text
+nicht und lassen die Freigabe stehen. `human_without_check` = eine stable-Seite ist durch `human:<id>` freigegeben,
+aber kein anderer Akteur (`[wiki] actor`, `process:…`) hat denselben Inhalt mit Prüfwert gegengeprüft;
+Freigaben ohne Prüfwert lösen das nicht aus. `verified_unhashed` = die gültige Gegenprüfung einer noch nicht
+freigegebenen Seite hat keinen Prüfwert (Vermerk aus der Zeit vor 0.3.0): sie gilt weiter, zählt aber nicht als
+Gegenprüfung für eine Freigabe; neu gegenprüfen lassen und mit `verify` vermerken. `check_outdated` = eine Seite
+ohne Freigabe hat Vermerke von Claude oder einem Prozess, aber keiner passt mehr zum Inhalt. Ein Vermerk ohne
+Prüfwert gilt, solange weder `generated.at` noch ein späterer Vermerk mit anderem Prüfwert eine Änderung nach
+ihm zeigt. `human_unsigned` (nur mit `[trust] signed_human = true` und in
+einem Git-Repo) = ein `verified`-Eintrag durch `human:<id>` ist noch nicht committet oder kam mit einem Commit ohne
+gültige Signatur (`git blame` je Seite, dann `%G?` des Commits; gültig sind G und U). OKF §5.2 nennt `verified` unabhängig von `generated.at`; okfw bindet die
+Freigabe strenger an den Inhalt.
 
 Datum: `source_undated` = Quellenkarte ohne `csl`-Block, aus deren Feldern sich kein Datum ergibt
 (`date`, `created`, `published`, `year`); im APA-Beleg stünde „o. J.“. Für Repo-Dateien und Webseiten
 das Commit-, Veröffentlichungs- oder Stand-Datum setzen. Ist eine Quelle wirklich undatiert, das bewusst
 mit `date: o. J.` (auch `n. d.`, `undatiert`) vermerken; dann entfällt die Warnung. Fehlt `issued` in
 einem `csl`-Block, meldet das schon `csl_incomplete`.
+
+## Freigabe über Claude
+
+Ziel: Eine Freigabe, die Claude auf Zuruf schreibt („Charge 3 freigeben“), bleibt an den Inhalt gebunden,
+den ein Mensch gesehen hat, und lässt sich außerhalb von Claude nachprüfen. Drei Stufen:
+
+| Stufe | Woran erkennbar | Wer |
+|---|---|---|
+| draft | `status: draft`, kein gültiger Vermerk zum jetzigen Inhalt | Claude schreibt mit `new`, `body`, `sources` |
+| geprüft | `verified`-Eintrag eines anderen Akteurs (`[wiki] actor`, `process:…`) mit Prüfwert zum jetzigen Inhalt | Gegenprüfung am Original (Skill `pruefen` oder ein Prozess), dann `verify <seite> --by <akteur> --note …` |
+| stable | zusätzlich `verified` durch `human:<id>` mit demselben Prüfwert, `status: stable` | nur ein Mensch: `verify <seiten> --by human:<id> --status stable` |
+
+Jeder `verify`-Vermerk trägt den Prüfwert `body_sha256` des Inhalts, den er geprüft hat. Ändert sich der
+Körper danach, verfällt die Freigabe: `body` setzt eine stable-Seite auf `draft`, Lint meldet
+`verified_outdated`, `status` und Dashboard zählen verfallene Freigaben. Die Vertrauensstufen in `status`
+(human-reviewed, machine-confirmed, unverified) zählen nur Vermerke, die zum jetzigen Inhalt passen; Seiten mit
+Vermerken, von denen keiner mehr passt, stehen getrennt als „n verfallen“, dazu „n zur Freigabe“. Ohne frische Gegenprüfung lehnt
+`verify --status stable` ab (`--force` schreibt trotzdem und vermerkt das im Ereignis; Lint
+`human_without_check`). `status` und `verified` ändert nur `verify`: Der Guard blockiert Edit und Write, die
+diese Schlüssel einer Wiki-Seite ändern; eine neue Seite darf `status: draft` tragen.
+
+Ablauf einer Charge:
+
+1. Claude schreibt die Seiten (`body`), ein frischer Agent prüft sie gegen die Originale (`pruefen`), Claude
+   arbeitet die Befunde ein und setzt `verify <seiten> --by <[wiki] actor> --note "Charge 3: …"`.
+2. `dashboard` erzeugen, „Zur Freigabe“ aufklappen: je Seite der ganze Text mit hervorgehobenen Belegen (lange
+   Seiten zuerst die belegten Aussagen, der ganze Text klappt auf, eingeklappt mit „n Absätze ohne Fußnote“)
+   und die Notiz der Gegenprüfung. Lesen, Seiten markieren, Kennung (aus `[trust] human`) und Notiz („Charge 3“)
+   eintragen.
+3. Die Zeile darunter kopieren und selbst im Terminal ausführen (oder Claude wörtlich übergeben): ein Aufruf,
+   ein Ereignis je Seite. Wer eine Seite danach ändert, findet sie unter „Freigabe verfallen“ wieder.
+4. Den Stand committen, mit `[trust] signed_human = true` signiert. Lint `human_unsigned` meldet jede
+   Freigabe, die nicht aus einem signierten Commit stammt; diese Signatur kann Claude nicht leisten.
+
+Commit-Signatur einrichten (SSH-Schlüssel, Git ≥ 2.34; einmal je Rechner, der Schlüssel bleibt außerhalb von Claude):
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+echo "$(git config user.email) $(cat ~/.ssh/id_ed25519.pub)" >> ~/.ssh/allowed_signers
+git config --global gpg.ssh.allowedSignersFile ~/.ssh/allowed_signers
+git commit -S -m "Charge 3 freigegeben"    # oder dauerhaft: git config --global commit.gpgsign true
+```
 
 ## Lizenzen und Nutzungsrechte
 
@@ -341,7 +408,8 @@ findings = [f.as_dict() for f in wiki.lint()]
 wiki.rebuild()
 wiki.new_page("source", "shaw-2024", csl=csl_dict, access="fulltext",
               extra={"fulltext": wiki.fulltext_block("00_arbeit/pdfs/x.pdf")["fulltext"]})
-wiki.verify("concepts/iso-9001", by="human:jdoe", status="stable")
+wiki.verify("concepts/iso-9001", by="claude-code/claude-opus-5-5")                 # Gegenprüfung
+wiki.verify_pages(["concepts/iso-9001"], by="human:jdoe", status="stable", note="Charge 1")
 wiki.append_event("enrich", "sources/shaw-2024", "Lizenz aus Crossref")
 ```
 
@@ -354,13 +422,16 @@ Register und Korpora.
 `okfw.py dashboard` schreibt eine eigenständige HTML-Datei zum **inhaltlichen Erkunden** des Wikis:
 Daten als JSON eingebettet, Layout und Bedienung in reinem JavaScript, keine Bibliotheken aus dem Netz,
 in unter einer Sekunde erzeugt. Technische Angaben (Lint-Befunde, Prüfstatus) stehen bewusst nicht darin;
-dafür gibt es `lint` und `status`. Dateipfade erscheinen nur als Ablageort der Volltexte auf Quellenkarten,
+dafür gibt es `lint` und `status`. Ausnahme ist die Freigabe („Zur Freigabe“, verfallene Freigaben), die nur die
+normale Ausgabe zeigt. Dateipfade erscheinen nur als Ablageort der Volltexte auf Quellenkarten,
 in der öffentlichen Ausgabe nicht. Zeitangaben (Stand, Fundweg) stehen nur als Datum darin,
 auch in den eingebetteten Daten, keine Uhrzeiten. Was die Seiten selbst als offen markieren, zeigt die
 Übersicht „Offene Stellen“ (`[!todo]` dort eingeklappt). Mermaid ist bewusst nicht eingebettet (mehrere MB
 je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`-Block.
 
 - **Überschrift:** `[wiki] title` ohne einen Zusatz „– zuerst lesen“ (der gehört in den Root-Index).
+- **Verfallene Freigaben:** Die Kopfzeile nennt ihre Zahl, Vorschau und Leseansicht zeigen an der Seite
+  „stable, seit Änderung ungeprüft“ bzw. „Freigabe verfallen“ (nur in der normalen Ausgabe).
 - **Überblick:** Kacheln nur für Seiten je Art, „Fundweg dokumentiert“ und „Lizenz geklärt“.
 - **Netzwerkgraph:** Kanten wie im Lint (durchgezogen „verlinkt“ = Link im Text, gestrichelt „zitiert als
   Quelle“ = nur über `sources[]`). Layout nach Fruchterman-Reingold mit schwachem Zug zum Typ-Anker,
@@ -418,7 +489,21 @@ je Datei, kein Wiki nutzt es); Diagramme stehen als Textdiagramm in einem `text`
   Fließtext wie „um zu prüfen, ob“) und Kästen `> [!todo]`. Widersprüche und Prüfvermerke stehen als Liste,
   `[!todo]` eingeklappt je Seite, weil große Wikis über tausend davon haben. Durch Leerzeilen getrennte
   `>`-Kästen bleiben getrennt, auch wo Markdown sie zu einem Zitat zusammenfassen würde.
-- **Sprungleiste:** unter dem Titel Links zu Lernpfad, Glossar, Offene Stellen und Alle Seiten, soweit
+- **Zur Freigabe:** eingeklappter Abschnitt (nur normale Ausgabe, nur lesend) mit allen Seiten, die ein anderer
+  Akteur als ein Mensch (Claude, `process:…`) zum jetzigen Inhalt gegengeprüft hat und die keine gültige
+  menschliche Freigabe haben: je Seite Titel (öffnet die Leseansicht), Gegenprüfung mit Akteur, Datum und
+  Notiz aus dem Ereignis, „Freigabe verfallen, neu gegengeprüft“, falls zutreffend, die Zahl der Absätze ohne
+  Fußnote und der ganze Text wie in der Leseansicht, Absätze und Listenpunkte mit Beleg hervorgehoben. Ist der
+  Text länger als rund 1600 Zeichen, stehen zuerst die belegten Aussagen mit dem Text ihrer Fußnoten, der ganze
+  Text klappt darunter auf („Ganze Seite · n Absätze ohne Fußnote“). Darunter die Seiten mit verfallener
+  Freigabe ohne neue Gegenprüfung, mit Grund, und „Gegenprüfung ohne Prüfwert“ (Lint `verified_unhashed`) mit
+  einer Zeile zum Kopieren, die eine neue Gegenprüfung anstößt: `[trust] check_command` und die Seiten, sonst
+  eine Bitte an Claude mit Prüfablauf und `verify --by <[wiki] actor>`; kein `verify`-Aufruf. Kennung
+  (vorbelegt aus `[trust] human`, sonst mit der häufigsten `human:`-Kennung im Wiki) und Notiz für die Charge
+  eingeben, Seiten markieren; die Zeile darunter ist der fertige Aufruf
+  `uv run --quiet …/okfw.py --root … verify <seiten> --by human:<id> --status stable --note …` mit „Kopieren“.
+  Pfade unter dem Home-Ordner stehen mit `~`. Ohne solche Seiten fehlt der Abschnitt.
+- **Sprungleiste:** unter dem Titel Links zu Lernpfad, Glossar, Offene Stellen, Zur Freigabe und Alle Seiten, soweit
   vorhanden; ein eingeklappter Abschnitt klappt dabei auf.
 - Glossar und Offene Stellen folgen dem Umschalter „Umfang“; die Kopfzeile nennt dann auch die Gesamtzahl.
 - **Umfang:** Mit `[scope]` steht neben den Art-Chips ein Umschalter „Umfang: alle | Kern | …“. Er
@@ -518,8 +603,8 @@ laufen über `uv run --script`, `python3` braucht es nicht:
 | Ereignis | Aufruf (Plugin) | Wirkung |
 |---|---|---|
 | SessionStart | `uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}/skills/okfw/hooks/okf_hook.py" session-start` → `okfw.py status --hook` | Stand des Wikis und geschützte Pfade als Kontext |
-| PreToolUse `Write\|Edit\|MultiEdit\|NotebookEdit` | `… okf_hook.py guard` | blockiert Ereignisstrom, `raw/`, Exporte, Dashboards (mit `[visibility]` auch das öffentliche), `index.md`/`log.md` im Bundle, `[paths] protected` |
-| PostToolUse `Write\|Edit\|MultiEdit` | `… okf_hook.py post-edit` | Ereignis `write`/`edit` für Seiten im Bundle |
+| PreToolUse `Write\|Edit\|MultiEdit\|NotebookEdit` | `… okf_hook.py guard` | blockiert Ereignisstrom, `raw/`, Exporte, Dashboards (mit `[visibility]` auch das öffentliche), `index.md`/`log.md` im Bundle, `[paths] protected`; auf Wiki-Seiten Edit, MultiEdit und Write, die `status` oder `verified` ändern |
+| PostToolUse `Write\|Edit\|MultiEdit` | `… okf_hook.py post-edit` | hat das Werkzeug den Körper einer Seite im Bundle geändert (Vergleich mit dem Stand davor aus der Antwort von Claude Code; fehlt er, gilt der Körper als geändert): `okfw.py body <seite> --nachziehen` zieht `generated` nach, stable wie bei `body`, und bittet Claude, die Datei vor dem nächsten Edit neu zu lesen; sonst Ereignis `write`/`edit` |
 | Stop | `… okf_hook.py stop` → `okfw.py rebuild --hook` | Projektionen nachziehen; Lint-Fehler als eine Zeile, ohne zu blockieren |
 
 Nebenfall **Skill-Ordner** (`~/.claude/skills/okfw`, ohne Plugin): `hooks/settings.example.json` in die
@@ -530,6 +615,9 @@ Arten zugleich, sonst laufen die Hooks doppelt.
 
 Der Guard sucht die `wiki.toml` aufwärts ab der Zieldatei (rund 30 ms, nur Standardbibliothek,
 Python ≥ 3.11 wegen `tomllib`, das uv bereitstellt). Er schützt dieselben Pfade, die `status --hook` als
-„Nicht direkt bearbeiten“ nennt (`protected_paths` im Kern). Schreibzugriffe über Bash erfasst er nicht;
-das bleibt Regel. Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`,
+„Nicht direkt bearbeiten“ nennt (`protected_paths` im Kern). Für die Vertrauensfelder vergleicht er die
+Schlüssel `status` und `verified` im Frontmatter vor und nach der Änderung als Text (Edit und MultiEdit
+werden auf die Datei angewandt, Write bringt den ganzen Inhalt); jede Abweichung wird abgelehnt.
+Schreibzugriffe über Bash erfasst er nicht, auch `okfw.py verify` nicht; das bleibt Regel, und dafür gibt es
+die Signatur. Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`,
 Zeitüberschreitung) melden die Hooks als eine Zeile (`systemMessage`); ohne `wiki.toml` bleiben sie still.

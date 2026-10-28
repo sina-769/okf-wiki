@@ -12,7 +12,7 @@ okfw steht für Open Knowledge Format Wiki; OKF ist das Open Knowledge Format v0
   `sources`, `rebuild`, `lint`, `verify`, `lizenz`, `rechte`, `dashboard` …). Alles Projektspezifische steht in
   einer `wiki.toml` im Projekt; ohne `wiki.toml` schreibt der Kern nichts.
 - **Hooks**: Status beim Sitzungsstart, Schreibschutz für Rohquellen, Ereignisstrom und generierte
-  Dateien, Ereignisprotokoll bei Write/Edit, Rebuild beim Stop. Sie wirken nur in Projekten mit
+  Dateien sowie für `status` und `verified` auf Wiki-Seiten, Ereignisprotokoll und `generated` bei Write/Edit, Rebuild beim Stop. Sie wirken nur in Projekten mit
   `wiki.toml`.
 - **Dashboard**: eine einzelne HTML-Datei ohne Nachladen aus dem Netz (Netzgraph, Lernpfad, Glossar,
   offene Stellen, Leseansicht mit Belegen und Literatur nach APA 7).
@@ -94,11 +94,20 @@ Dokumentation, Code, Spezifikation und Datensatz, Lizenz und Rohquellen-Paket al
 Fundweg als Warnung. Dateien aus einem Repo erfasst `capture <slug> --url … --commit SHA --file PFAD=REPO-PFAD`
 mit dem Pfad im Repo je Datei.
 
-`capture --license` prüft vorher, ob die Lizenz das lokale Ablegen des Volltexts erlaubt. `status: stable`
-setzt nur ein Mensch: `verify <seite> --by human:<id> --status stable`.
+`capture --license` prüft vorher, ob die Lizenz das lokale Ablegen des Volltexts erlaubt.
 
 Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. Alle Befehle und
 `wiki.toml`-Schlüssel: [skills/okfw/docs/konfiguration.md](skills/okfw/docs/konfiguration.md).
+
+## Freigabe
+
+Jeder Prüfvermerk von `verify` trägt einen Prüfwert des Seitentexts, und ändert sich der Text danach,
+verfällt der Vermerk. `status: stable` setzt nur ein Mensch mit `verify <seite>… --by human:<id> --status stable`,
+und nur, wenn Claude oder ein Prozess denselben Text vorher gegengeprüft hat. Im Dashboard listet
+„Zur Freigabe“ diese Seiten mit ihrem ganzen Text und baut den `verify`-Aufruf für eine ganze Charge zum
+Kopieren. Wird eine freigegebene Seite danach mit `body`, Edit oder Write geändert, fällt sie auf `draft`
+zurück, und Lint meldet `verified_outdated`. Ablauf, Lint-Regeln und Commit-Signatur:
+[„Freigabe über Claude“ in konfiguration.md](skills/okfw/docs/konfiguration.md#freigabe-über-claude).
 
 ## Tests
 
@@ -126,8 +135,10 @@ docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okfw-nachbau /src /out
 Mit `-e CLAUDE_CODE_OAUTH_TOKEN` (Token aus `claude setup-token`) läuft zusätzlich eine echte
 Claude-Sitzung, die an den Schreibschutz stößt.
 
-Letztes Protokoll: [tests/protokoll-2026-10-28.md](tests/protokoll-2026-10-28.md) (okfw 0.2.0, 32 von 32
-mit `claude -p`); davor [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md) (0.1.0).
+Letztes Protokoll: [tests/protokoll-2026-10-28-0.3.0.md](tests/protokoll-2026-10-28-0.3.0.md) (okfw 0.3.0,
+33 von 33 Pflichtschritten, der Schritt mit `claude -p` ohne Token übersprungen); davor
+[tests/protokoll-2026-10-28.md](tests/protokoll-2026-10-28.md) (0.2.0, 32 von 32 mit `claude -p`) und
+[tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md) (0.1.0).
 
 ## Lizenz und Dank
 

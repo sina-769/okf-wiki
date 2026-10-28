@@ -329,6 +329,32 @@ details.sub { margin-top: 16px; }
 details.sub > summary { padding: 6px 0; font-size: 14px; color: var(--ink); }
 details.sub details > summary { padding: 6px 0; font-weight: 400; display: list-item; }
 details.sub .open-list { padding-left: 18px; }
+
+/* Zur Freigabe */
+.rel-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 4px 0 8px; }
+.rel-bar label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.rel-bar input[type=text] { font: 13px var(--font-mono); padding: 4px 8px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); background: var(--surface); color: var(--ink); min-width: 12em; }
+.rel-list { list-style: none; padding: 0; margin: 0; }
+.rel-list > li { padding: 10px 0; border-bottom: 1px solid var(--grid); }
+.rel-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.rel-head input { margin: 0; }
+.rel-check { font: 11px var(--font-mono); color: var(--muted); margin: 4px 0 0 22px; }
+.rel-claims { margin: 6px 0 0 22px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.rel-claims li { margin: 4px 0; }
+.rel-claims sup { font: 10px var(--font-mono); color: var(--muted); }
+.rel-notes { list-style: none; padding: 0; margin: 2px 0 0; font: 11px var(--font-mono); color: var(--muted); }
+.rel-full { margin: 8px 0 0 22px; font-size: 14px; line-height: 1.6; }
+.rel-full p, .rel-full li { line-height: 1.6; }
+.rel-full p { margin: 0 0 10px; }
+.rel-full h2, .rel-full h3, .rel-full h4 { font-size: 15px; margin: 16px 0 6px; }
+.rel-full pre { font-size: 12px; padding: 10px 12px; margin: 12px 0; }
+.rel-full .rel-hit { background: color-mix(in srgb, var(--c1) 12%, transparent); box-shadow: -3px 0 0 var(--c1); border-radius: 2px; }
+.rel-full p.rel-hit { padding: 2px 6px; }
+details.rel-more { margin: 6px 0 0 22px; }
+details.rel-more > summary { font-size: 13px; color: var(--ink-2); cursor: pointer; padding: 4px 0; }
+details.rel-more .rel-full { margin-left: 0; }
+.rel-cmd { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; }
+.rel-cmd code { flex: 1; font: 12px var(--font-mono); background: var(--code-bg); color: var(--ink); padding: 8px 10px; border-radius: 6px; overflow-wrap: anywhere; }
 </style>
 <script>
   // Hell oder dunkel vor dem ersten Zeichnen setzen: gespeicherte Wahl, sonst die des Systems.
@@ -402,6 +428,11 @@ details.sub .open-list { padding-left: 18px; }
   <details class="card fold" id="opencard" hidden>
     <summary id="opensum">Offene Stellen</summary>
     <div class="pad" id="openbody"></div>
+  </details>
+
+  <details class="card fold" id="relcard" hidden>
+    <summary id="relsum">Zur Freigabe</summary>
+    <div class="pad" id="relbody"></div>
   </details>
 
   <details class="card" id="tablecard">
@@ -502,6 +533,9 @@ details.sub .open-list { padding-left: 18px; }
   const visText = n => ((VIS && VIS.values.find(x => x[0] === n.visibility)) || [n.visibility, n.visibility])[1]
     + (n.visibility_derived ? " (abgeleitet)" : "");
   const visBadge = n => (VIS && n.internal ? h("span", { class: "tag internal", title: "Fehlt in der öffentlichen Ausgabe" }, visText(n)) : null);
+  // Freigabe (nur normale Ausgabe): verfallen = die menschliche Prüfung galt einem früheren Inhalt
+  const relBadge = n => (n.release === "outdated" ? h("span", { class: "tag internal", title: "Inhalt nach der menschlichen Prüfung geändert; neu prüfen und freigeben" },
+    n.stable ? "stable, seit Änderung ungeprüft" : "Freigabe verfallen") : null);
   let colorBy = "type";
   function paint(n) {
     if (colorBy === "scope") {
@@ -535,7 +569,9 @@ details.sub .open-list { padding-left: 18px; }
   };
   $("title").replaceChildren(h("span", { class: "hl" }, D.title));
   const internalCount = VIS ? count(n => n.internal) : 0;
-  $("subtitle").textContent = `${nodes.length} Seiten` + (internalCount ? `, davon ${internalCount} nicht öffentlich` : "") + ` · Stand ${day(D.generated)}`;
+  const outdatedCount = count(n => n.release === "outdated");
+  $("subtitle").textContent = `${nodes.length} Seiten` + (internalCount ? `, davon ${internalCount} nicht öffentlich` : "")
+    + (outdatedCount ? ` · ${outdatedCount} ${outdatedCount === 1 ? "Freigabe" : "Freigaben"} verfallen` : "") + ` · Stand ${day(D.generated)}`;
   const srcNodes = nodes.filter(n => n.access);
   const tiles = [
     ["Seiten", nodes.length, typeOrder.map(t => `${tlabel(t)} ${count(n => n.type === t)}`).join(" · ")],
@@ -800,8 +836,7 @@ details.sub .open-list { padding-left: 18px; }
   function kindLine(n) {
     const bits = [h("span", { class: "pill" }, dotSvg(paint(n), 11), tlabel(n.type))];
     if (n.subtype) bits.push(h("span", {}, lab(n.subfield, n.subtype)));
-    const vb = visBadge(n);
-    if (vb) bits.push(vb);
+    for (const b of [visBadge(n), relBadge(n)]) if (b) bits.push(b);
     return h("div", { class: "pv-kind" }, ...bits);
   }
   function preview(n) {
@@ -1284,7 +1319,7 @@ details.sub .open-list { padding-left: 18px; }
     const firstP = body.querySelector(":scope > p");
     if (n.description && !(firstP && firstP.textContent.trim() === n.description.trim())) head.append(h("p", { class: "r-desc" }, n.description));
     const facetBtn = (kind, value, text) => h("button", { class: "metalink", type: "button", title: `Alle Seiten: ${text}`, onclick: () => goFacet(kind, value) }, text);
-    const meta = [visBadge(n), n.subtype ? facetBtn("s", n.subtype, lab(n.subfield, n.subtype)) : null,
+    const meta = [visBadge(n), relBadge(n), n.subtype ? facetBtn("s", n.subtype, lab(n.subfield, n.subtype)) : null,
       n.updated ? h("span", {}, `Stand ${day(n.updated)}`) : null].filter(Boolean);
     if (meta.length) head.append(h("div", { class: "r-meta" }, ...meta));
     root.append(head, body);
@@ -1553,9 +1588,122 @@ details.sub .open-list { padding-left: 18px; }
     $("opencard").hidden = false;
   })();
 
+  // ---------------------------------------------------------------- Zur Freigabe (nur normale Ausgabe, nur lesend)
+  // Seiten mit Gegenprüfung zum jetzigen Inhalt, aber ohne gültige Freigabe durch einen Menschen, und verfallene
+  // Freigaben. Das Dashboard schreibt nichts; es baut den verify-Aufruf für die markierten Seiten zum Kopieren.
+  (function releaseQueue() {
+    const R = D.release;
+    if (!R || !(R.pending.length || R.outdated.length || (R.unhashed || []).length)) return;
+    const tOrder = Object.fromEntries(typeOrder.map((t, i) => [t, i]));
+    const order = (a, b) => tOrder[a.n.type] - tOrder[b.n.type] || coll.compare(a.n.title, b.n.title);
+    const pending = R.pending.map(r => ({ ...r, n: byId.get(r.id) })).filter(r => r.n).sort(order);
+    const outdated = R.outdated.map(r => ({ ...r, n: byId.get(r.id) })).filter(r => r.n).sort(order);
+    const unhashed = (R.unhashed || []).map(r => ({ ...r, n: byId.get(r.id) })).filter(r => r.n).sort(order);
+    const marked = new Set();
+    const q = v => (/^[\w.:\/@%+=,-]+$/.test(v) ? v : `'${v.replace(/'/g, "'\\''")}'`);
+    const who = h("input", { type: "text", value: R.human || "human:", "aria-label": "Kennung der prüfenden Person", spellcheck: "false" });
+    const note = h("input", { type: "text", value: "Charge", "aria-label": "Notiz für alle markierten Seiten" });
+    const code = h("code", {});
+    const copy = h("button", { class: "ghost", type: "button", onclick: () => marked.size && copyText(code.textContent, copy) }, "Kopieren");
+    function command() {
+      const ids = pending.filter(r => marked.has(r.id)).map(r => r.id);
+      code.textContent = ids.length ? `${R.command} ${ids.join(" ")} --by ${q(who.value.trim())} --status stable`
+        + (note.value.trim() ? ` --note ${q(note.value.trim())}` : "") : "Noch keine Seite markiert.";
+      copy.disabled = !ids.length;
+      $("relsum").replaceChildren("Zur Freigabe", h("span", { class: "sumnote" }, ` · ${pending.length} gegengeprüft`
+        + (outdated.length ? ` · ${outdated.length} ${outdated.length === 1 ? "Freigabe" : "Freigaben"} verfallen` : "")
+        + (unhashed.length ? ` · ${unhashed.length} ohne Prüfwert` : "")
+        + (marked.size ? ` · ${marked.size} markiert` : "")));
+    }
+    who.addEventListener("input", command);
+    note.addEventListener("input", command);
+    // Ganzer Text der Seite wie in der Leseansicht; Absätze und Listenpunkte mit Beleg hervorgehoben. Wer freigibt,
+    // soll alles sehen, was freigegeben wird, auch Absätze ohne Fußnote.
+    const LONG = 1600;   // Zeichen; längere Seiten zeigen zuerst die belegten Aussagen, der ganze Text klappt auf
+    function fullText(n) {
+      const div = h("div", { class: "prose-content rel-full" });
+      div.innerHTML = n.html; // im Kern aus Markdown erzeugt; rohes HTML der Seiten ist dort bereits maskiert
+      for (const el of div.querySelectorAll("[id]")) el.removeAttribute("id"); // Anker gehören der Leseansicht
+      const blocks = [...div.querySelectorAll("p, li")].filter(el => !el.closest(".footnote")
+        && (el.tagName === "P" || !el.querySelector(":scope > p")) && el.textContent.trim());
+      let bare = 0;
+      for (const el of blocks) {
+        const hit = [...el.querySelectorAll(".cite, a.footnote-ref")].some(c => c.closest("p, li") === el);
+        el.classList.toggle("rel-hit", hit);
+        bare += !hit;
+      }
+      div.addEventListener("click", ev => {
+        const a = ev.target.closest("a");
+        if (!a) return;
+        if (a.dataset.page) { ev.preventDefault(); const m = byId.get(a.dataset.page); if (m) openReader(m, "new"); }
+        else if (a.classList.contains("missing") || (a.getAttribute("href") || "").startsWith("#")) ev.preventDefault();
+        else { a.target = "_blank"; a.rel = "noopener"; }
+      });
+      return { div, bare, long: div.textContent.length > LONG };
+    }
+    const bareText = k => `${k} ${k === 1 ? "Absatz" : "Absätze"} ohne Fußnote`;
+    const claimList = r => (r.claims.length ? h("ol", { class: "rel-claims" }, ...r.claims.map(c => h("li", {},
+      ...c.text.split(/(\[\^[^\]\s]+\])/).map(part => (/^\[\^/.test(part) ? h("sup", {}, part.slice(2, -1)) : part)),
+      h("ul", { class: "rel-notes" }, ...c.notes.map(([label, text]) => h("li", {}, `${label}: ${text || "(Fußnote ohne Text)"}`))))))
+      : h("div", { class: "rel-check" }, "Keine Aussagen mit Fußnote."));
+    const boxes = [];
+    const item = r => {
+      const full = fullText(r.n);
+      const box = h("input", { type: "checkbox", "aria-label": `${r.n.title} markieren`, onchange: () => { box.checked ? marked.add(r.id) : marked.delete(r.id); command(); } });
+      boxes.push(box);
+      return h("li", {},
+        h("div", { class: "rel-head" }, box,
+          h("button", { class: "linkish", type: "button", onclick: () => openReader(r.n, "new") }, r.n.title),
+          h("span", { class: "kind pill" }, typeDot(r.n.type), tlabel(r.n.type)),
+          r.renew ? h("span", { class: "tag internal", title: "Die frühere Freigabe galt einem anderen Inhalt" }, "Freigabe verfallen, neu gegengeprüft") : null),
+        h("div", { class: "rel-check" }, `Gegenprüfung ${r.check_by} · ${day(r.check_at)}` + (r.note ? ` · ${r.note}` : "")
+          + (full.bare ? ` · ${bareText(full.bare)}` : "")),
+        ...(full.long ? [claimList(r), h("details", { class: "rel-more" },
+          h("summary", {}, "Ganze Seite" + (full.bare ? ` · ${bareText(full.bare)}` : "")), full.div)] : [full.div]));
+    };
+    const all = h("button", { class: "ghost", type: "button", onclick: () => {
+      const on = marked.size < pending.length;
+      for (const [i, r] of pending.entries()) { boxes[i].checked = on; on ? marked.add(r.id) : marked.delete(r.id); }
+      command();
+    } }, "Alle markieren");
+    const body = $("relbody");
+    body.append(h("p", { class: "note" }, "Seiten, die Claude oder ein Prozess zum jetzigen Inhalt gegengeprüft hat und die noch kein Mensch freigegeben hat, je mit dem ganzen Text; Absätze mit Beleg sind hervorgehoben. Lange Seiten zeigen zuerst die belegten Aussagen, der ganze Text klappt auf. Markieren, Befehl kopieren, im Projektordner ausführen; das Dashboard selbst ändert nichts."));
+    if (pending.length) {
+      body.append(h("div", { class: "rel-bar" }, h("label", {}, "Kennung", who), h("label", {}, "Notiz", note), all),
+        h("ul", { class: "rel-list" }, ...pending.map(item)),
+        h("div", { class: "rel-cmd" }, code, copy));
+    }
+    if (outdated.length) {
+      body.append(h("section", { class: "open-group" }, h("h3", {}, h("span", { class: "mark contra", "aria-hidden": "true" }),
+        `Freigabe verfallen, Gegenprüfung fehlt (${outdated.length})`),
+        h("ul", { class: "open-list" }, ...outdated.map(r => h("li", {},
+          h("button", { class: "linkish", type: "button", onclick: () => openReader(r.n, "new") }, r.n.title),
+          h("span", { class: "kind pill" }, typeDot(r.n.type), tlabel(r.n.type)),
+          h("div", { class: "rel-check" }, `Freigabe ${r.by} · ${day(r.at)} · ${r.why}`))))));
+    }
+    if (unhashed.length) {
+      // Prüfungen aus der Zeit vor dem Prüfwert: gelten, zählen aber nicht als Gegenprüfung für eine Freigabe.
+      // Kein verify-Aufruf: erst neu gegenprüfen lassen, dann stehen die Seiten oben zur Freigabe.
+      const ids = unhashed.map(r => r.id).join(" ");
+      const line = h("code", {}, R.check_command ? `${R.check_command} ${ids}`
+        : `Bitte gegenprüfen lassen (frischer Agent, nur lesend, gegen die Originale), Befunde einarbeiten und mit verify --by ${R.actor} vermerken: ${ids}`);
+      const copyLine = h("button", { class: "ghost", type: "button", onclick: () => copyText(line.textContent, copyLine) }, "Kopieren");
+      body.append(h("section", { class: "open-group" }, h("h3", {}, h("span", { class: "mark check", "aria-hidden": "true" }),
+        `Gegenprüfung ohne Prüfwert (${unhashed.length})`),
+        h("p", { class: "note" }, "Diese Prüfungen stammen aus der Zeit vor dem Prüfwert: Sie gelten weiter, zählen aber nicht als Gegenprüfung für eine Freigabe. Erneut gegenprüfen lassen; danach stehen die Seiten oben zur Freigabe."),
+        h("ul", { class: "open-list" }, ...unhashed.map(r => h("li", {},
+          h("button", { class: "linkish", type: "button", onclick: () => openReader(r.n, "new") }, r.n.title),
+          h("span", { class: "kind pill" }, typeDot(r.n.type), tlabel(r.n.type)),
+          h("div", { class: "rel-check" }, `Gegenprüfung ${r.by} · ${day(r.at)} · ohne Prüfwert`)))),
+        h("div", { class: "rel-cmd" }, line, copyLine)));
+    }
+    command();
+    $("relcard").hidden = false;
+  })();
+
   // Sprungleiste im Kopf zu den Abschnitten unter dem Graphen
   (function jump() {
-    const targets = [["lernpfad", "Lernpfad"], ["glosscard", "Glossar"], ["opencard", "Offene Stellen"], ["tablecard", "Alle Seiten"]]
+    const targets = [["lernpfad", "Lernpfad"], ["glosscard", "Glossar"], ["opencard", "Offene Stellen"], ["relcard", "Zur Freigabe"], ["tablecard", "Alle Seiten"]]
       .filter(([id]) => !$(id).hidden);
     if (targets.length < 2) return;
     $("jump").append(...targets.map(([id, label]) => h("button", { class: "linkish", type: "button", onclick: () => {
