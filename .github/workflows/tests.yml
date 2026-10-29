@@ -1,0 +1,22 @@
+# Tests bei jedem Pull Request und auf main. Ohne Netzzugriffe der Tests selbst, ohne Token;
+# uv lädt nur die Abhängigkeiten der Skripte (pyyaml, markdown). Nachbau und Selbstreview bleiben Release-Schritte.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run python -m unittest

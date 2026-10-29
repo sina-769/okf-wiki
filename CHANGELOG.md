@@ -1,5 +1,38 @@
 # Änderungen
 
+## 0.4.0 · 29.10.2026
+
+Erster Selbstreview über 0.3.0: Doku, Code und Tests gegeneinander gelesen
+([Bericht](tests/selbstreview-2026-10-29-0.3.0.md)).
+
+Neu:
+
+- **Selbstreview als Release-Schritt.** `tests/selbstreview.py` baut aus einem Commit ein Wegwerf-Wiki über okfw
+  selbst, je Befehl, Lint-Regel, `wiki.toml`-Schlüssel und Hook eine Karte mit Fundstellen; Ablauf in
+  `tests/selbstreview.md`.
+- **`tests/test_abdeckung.py`** prüft bei jedem Testlauf mit derselben Kartenliste: alles im Code steht in der
+  Doku und wird von einem Test berührt, alles in der Doku gibt es im Code.
+- **GitHub-Workflow** `.github/workflows/tests.yml`: Tests bei jedem Pull Request und auf `main`.
+- Tests für jede Lint-Regel und jeden `wiki.toml`-Schlüssel, die bisher keiner berührte.
+- Nachbau-Test 34 von 34 mit echter Claude-Sitzung: `claude -p` scheitert beim Überschreiben einer Rohquelle
+  am Guard und schlägt `capture` oder eine `-v2`-Fassung vor
+  ([tests/protokoll-2026-10-29-0.4.0.md](tests/protokoll-2026-10-29-0.4.0.md)).
+
+Behoben:
+
+- `rebuild --quiet` schwieg bei jedem Bedienfehler, jetzt nur ohne `wiki.toml`.
+- `[lint.severity]` mit anderem Wert als `error`, `warn`, `info`, `off` und `requires_core` wie `"v0.3"` sind
+  Bedienfehler statt Traceback.
+- `source_undated` übersah `date` (und `created`, `published`) auf Karten mit `authors`, `doi` oder `year`.
+- `lizenz --class` ohne `--name` endete auf einer Karte ohne Lizenznamen mit KeyError.
+- Die Meldung zur Zitatverfolgung bei `new` nennt `--fundweg-von`.
+- Doku an den Code angeglichen: Exit-Codes, vollständige Ereignisarten, `body --detail`, Lizenz- und
+  Volltextbefunde, Vorrang von `license.class`, Verhalten der Hooks je nach Einbau, Standardwerte und mehr
+  (48 Vermerke im Bericht).
+
+Klarstellung zu 0.3.0: Verfällt eine Gegenprüfung durch Claude oder einen Prozess, meldet Lint
+`check_outdated` (Hinweis); `verified_outdated` gilt nur der Freigabe durch einen Menschen.
+
 ## 0.3.0 · 28.10.2026
 
 Die Freigabe ist jetzt an den Inhalt gebunden, den jemand geprüft hat.

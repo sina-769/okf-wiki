@@ -46,25 +46,29 @@ uv run --quiet ~/.claude/skills/okfw/okfw.py <befehl> …
 ```
 
 Die `wiki.toml` wird aufwärts ab dem aktuellen Ordner gesucht. `--root DIR` nimmt `DIR/wiki.toml`,
-`--config PFAD` eine beliebige Datei (Projektordner ist dann ihr Ordner, außer `--root` ist gesetzt).
+`--config PFAD` eine beliebige Datei (Projektordner ist dann ihr Ordner, außer `--root` ist gesetzt). `init` legt die
+Datei immer unter `--root` bzw. im aktuellen Ordner an, `--config` gilt dort nicht.
+
+Exit 0 ist ok, 1 steht für `lint` mit Fehlern (mit `--strict` auch Warnungen) oder `rebuild --check` mit veralteten
+Projektionen, 2 für einen Bedienfehler (`status --hook` und `rebuild --hook` enden dabei mit 0).
 
 | Befehl | Zweck |
 |---|---|
-| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]` (ohne Code), Vertrauensstufen, gültige und verfallene Freigaben (davon „stable, seit Änderung ungeprüft“), Rohquellen ohne Karte, Umfang, Fundweg, Zahl der Ereignisse und Zeitpunkt des letzten; `--hook` gibt SessionStart-JSON aus |
+| `status [--hook]` | Seiten je Typ, draft, veraltet, offene `[!todo]` (ohne Code), Vertrauensstufen, gültige und verfallene Freigaben (davon „stable, seit Änderung ungeprüft“) und Seiten „zur Freigabe“, Seiten mit Gegenprüfung ohne Prüfwert, Rohquellen ohne Karte, Umfang, bei `[visibility] field` die Zahl verborgener Seiten, Fundweg, Zahl der Ereignisse und Zeitpunkt des letzten; `--hook` gibt SessionStart-JSON aus |
 | `lint [--strict] [--json] [--summary]` | OKF-Konformität und Profilregeln; Exit 1 bei Fehlern (mit `--strict` auch bei Warnungen) |
-| `rebuild [--check] [--quiet \| --hook]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts; `--hook` (Stop-Hook) erzeugt still neu und meldet Lint-Fehler als eine Zeile (`systemMessage`), ohne zu blockieren |
-| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` und `stale_after` gesetzt, Quellen mit `license: unknown` (mit `--set raw_packet=…` die Lizenz aus dessen `manifest.json`, `via: capture`) und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
-| `new source <slug>` bzw. `new-source <slug>` mit `--doi` · `--pmid` · `--arxiv` · `--manuell --titel … --url … [--autor] [--jahr] [--csl-typ]`, dazu `[--volltext PFAD --von URL] [--evidenz E]` | Quellenkarte mit Metadaten aus Crossref (DOIs, die Crossref nicht kennt: DataCite), PubMed oder arXiv (CSL, Kurzbeleg, APA-Block); setzt `[sources] checked_field` (`{by: process:crossref, at}`) und bei Rückzug oder Korrektur `[sources] updates_field`; `access` ohne Angabe `citation`, bei `--manuell` `originaldokument`, wenn das Profil ihn kennt |
+| `rebuild [--check] [--quiet \| --hook]` (Alias `index`) | `index.md` je Ordner, `log.md`, Exporte; `--check` schreibt nichts und endet mit Exit 1, wenn etwas veraltet ist; `--hook` (Stop-Hook) erzeugt still neu und meldet Lint-Fehler als eine Zeile (`systemMessage`), ohne zu blockieren |
+| `new <typ> <slug> --title … [--description] [--sources a,b] [--tags] [--access] [--resource] [--csl DATEI\|-] [--set feld=wert] [--fundweg ART --db --query --fundweg-von SLUG]` | Seite aus Vorlage, `generated` gesetzt, `stale_after` nur bei Typen mit `stale_months`, Quellen mit `license: unknown` (mit `--set raw_packet=…` die Lizenz aus dessen `manifest.json`, `via: capture`) und auf Wunsch `fundweg`, Ereignis `create`. Deutsche Optionen `--titel`, `--beschreibung`, `--quellen` |
+| `new source <slug>` bzw. `new-source <slug>` mit `--doi` · `--pmid` · `--arxiv` · `--manuell --titel … --url … [--autor] [--jahr] [--csl-typ]`, dazu `[--volltext PFAD --von URL] [--evidenz E]` | Quellenkarte mit Metadaten aus Crossref (DOIs, die Crossref nicht kennt: DataCite), PubMed oder arXiv (CSL, Kurzbeleg, APA-Block); setzt `[sources] checked_field` (`{by, at}` mit dem Dienst, der geantwortet hat: `process:crossref`, `process:datacite`, `process:pubmed` oder `process:arxiv`) und bei Rückzug oder Korrektur `[sources] updates_field`; `access` ohne Angabe `citation`, bei `--manuell` `originaldokument`, wenn das Profil ihn kennt |
 | `fundweg <seite> --art … [--db] [--query] [--von] [--at] [--by] [--add]` | Fundweg einer Quelle setzen; `--add` hängt einen weiteren an; `--at`/`--by` für Nachträge mit dem echten Zeitpunkt; zieht `generated` nach |
 | `capture <slug> --url … --file PFAD[=REPO-PFAD] … [--source-path] [--commit] [--license … --license-url …] [--note]` | Rohquellen-Paket mit Manifest (SHA-256, 0444); Symlinks werden abgelehnt. `--file` mehrfach, je Datei mit ihrem Pfad im Quell-Repository (`--file /tmp/x/hooks.json=hooks/hooks.json`); `--source-path` gilt für Dateien ohne eigenen. `--commit` warnt, wenn es kein voller SHA ist. Prüft vorher „Volltext lokal ablegen“ für die Lizenz aus `--license`/`--license-url`: nicht erlaubt → Abbruch, erst fragen oder Auflage → Warnung (ohne `--license` gilt die Lizenz als unbekannt) |
 | `hash <pfad> [--from URL]` (Alias `sha`) | `fulltext`-Block für Karten ohne Rohquellen-Paket |
-| `verify <seite> [<seite> …] --by human:<id> [--status stable] [--note] [--force]` | Prüfvermerk nach OKF §5.2 mit Prüfwert des Seitenkörpers (`body_sha256`, siehe [Freigabe](#freigabe-über-claude)) für eine oder mehrere Seiten (eine Charge), `--note` für alle, ein Ereignis je Seite; ändert nur `verified` und `status`, alles andere bleibt byte-genau. `--status stable` nur mit einem `human:`-Akteur und nur, wenn jede Seite eine Gegenprüfung durch einen anderen Akteur mit Prüfwert zum jetzigen Inhalt hat; sonst Abbruch ohne Änderung, `--force` gibt trotzdem frei und vermerkt das im Ereignis |
+| `verify <seite> [<seite> …] --by human:<id> [--status STATUS] [--note] [--force]` | Prüfvermerk nach OKF §5.2 mit Prüfwert des Seitenkörpers (`body_sha256`, siehe [Freigabe](#freigabe-über-claude)) für eine oder mehrere Seiten (eine Charge), `--note` für alle, ein Ereignis je Seite; ändert nur `verified` und `status`, alles andere bleibt byte-genau. `--status` nimmt `draft` und `deprecated` mit jedem Akteur, `stable` nur mit einem `human:`-Akteur und nur, wenn jede Seite eine Gegenprüfung durch Claude oder einen Prozess (Akteur ohne `human:`) mit Prüfwert zum jetzigen Inhalt hat; sonst Abbruch ohne Änderung, `--force` gibt trotzdem frei und vermerkt das im Ereignis |
 | `event <art> <seite> [detail] [--by]` | Ereignis anhängen |
-| `body <seite> <datei\|->` · `body <seite> --nachziehen` | Körper ersetzen; im Frontmatter ändert sich nur `generated {by, at}`, auf einer stable-Seite, deren Freigabe nicht mehr zum Inhalt passt, dazu `status: draft` (`[trust] edit_resets_stable`; `verified` bleibt stehen, das Ereignis nennt die verfallene Freigabe). Gleicher Inhalt (gleicher Prüfwert) ändert nichts. `--nachziehen`: der Körper ist schon geändert (Edit oder Write, ruft der PostToolUse-Hook auf), nur `generated` und `status` wie eben |
+| `body <seite> <datei\|-> [--detail TEXT]` · `body <seite> --nachziehen [--detail TEXT]` | Körper ersetzen; im Frontmatter ändert sich nur `generated {by, at}`, auf einer stable-Seite ohne gültige Freigabe (auch ohne jede Freigabe) dazu `status: draft` (`[trust] edit_resets_stable`; `verified` bleibt stehen, das Ereignis nennt die verfallene Freigabe). `--detail` ist der Text des Ereignisses. Gleicher Inhalt (gleicher Prüfwert) ändert nichts. `--nachziehen`: der Körper ist schon geändert (Edit oder Write, ruft der PostToolUse-Hook auf), nur `generated` und `status` wie eben |
 | `sources <seite> [--add a,b] [--remove c]` (Alias `quellen`) | `sources[]` chirurgisch ergänzen oder kürzen, zieht `generated` nach und gibt die Fußnotenzeilen für den Text aus. `--add ID=SLUG` legt eine weitere Fußnote auf dieselbe Karte an (eigene Fundstelle). `--remove` nur, wenn der Text `[^id]` nicht mehr zitiert |
 | `init [--profile NAME]` | `wiki.toml` aus `profiles/NAME.toml`, Ordner, erstes Ereignis |
 | `rechte [<seite>] [--aktion A] [--json]` (Alias `rights`) | Lizenzen und Nutzungsrechte: Übersicht je Lizenzklasse, eine Quelle im Detail oder alle Quellen nach einem Recht gruppiert (`--aktion abbildung`) |
-| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch, zieht `generated` nach und protokolliert |
+| `lizenz <seite> --name … [--url] [--class] [--via]` · `lizenz <seite> --fetch [--force]` · `lizenz --missing --fetch [--dry-run]` (Alias `license`) | Lizenz setzen oder suchen (DOI, PMID, PMCID): Crossref bzw. DataCite, Europe PMC, OpenAlex (je Fundort, Verlagsfassung zuerst; `via` nennt Dienst und Fassung); schreibt `license {name, url, checked, via}` chirurgisch, zieht `generated` nach und protokolliert; `--dry-run` gilt für jede Form und zeigt, was geschrieben würde |
 | `dashboard [--out PFAD] [--oeffentlich] [--open]` | eine HTML-Datei mit Netz, Kennzahlen, Struktur, Lernpfad, Glossar, offenen Stellen, „Zur Freigabe“ und Tabelle; `--oeffentlich` (Alias `--public`) ohne verborgene Seiten aus `[visibility]` |
 
 ## wiki.toml
@@ -75,14 +79,14 @@ Alle Pfade relativ zum Projektordner. Nicht gesetzte Werte nehmen den Standard i
 [wiki]
 title = "…"                     # Überschrift des Root-Index ("Wiki")
 bundle = "wiki"                 # OKF-Bundle-Wurzel ("wiki")
-actor = "claude-code/claude-opus-5-5"   # generated.by neuer Seiten; Umgebungsvariable WIKI_ACTOR geht vor
+actor = "claude-code/claude-opus-5-5"   # generated.by neuer Seiten ("claude-code/unknown"); Umgebungsvariable WIKI_ACTOR geht vor
 okf_version = "0.2"
-requires_core = "0.1"           # Kern verweigert die Arbeit, wenn er älter ist
+requires_core = "0.1"           # Version als MAJOR.MINOR ("0.3", ein Patch-Teil zählt nicht), anderes ist ein Bedienfehler; Kern verweigert die Arbeit, wenn er älter ist
 
 [paths]
 events = "wiki/.events.jsonl"   # Ereignisstrom ("<bundle>/.events.jsonl")
 raw = "raw"                     # Rohquellen-Pakete; leer = keine Pakete, nur fulltext-Blöcke
-protected = ["quellen/volltexte/**"]   # weitere Glob-Muster für den Guard-Hook
+protected = ["quellen/volltexte/**"]   # weitere Muster für den Guard-Hook: fnmatch auf den Pfad relativ zum Projektordner, * passt auch über /, ** hat keine eigene Bedeutung
 
 [index]
 root = "overview"               # overview: „Zuerst lesen“ + Bereiche mit Anzahl | full: jede Seite im Root-Index
@@ -98,9 +102,9 @@ banner = "> Generiert – nicht von Hand bearbeiten."   # Zeile unter jeder Inde
 [log]
 title = "Aktivitätslog"
 banner = ""
-link_text = "title"             # title | id
+link_text = "title"             # title | id (bei id trägt das create-Ereignis den Titel als detail)
 show_actor = false              # „(claude-code/…)“ anhängen
-labels = {creation = "Creation"}   # Beschriftung je Ereignisart, Standard: deutsche Wörter
+labels = {create = "Creation"}   # Beschriftung je Ereignisart, Standard: deutsche Wörter
 
 [enums]                         # Feld = erlaubte Werte; gilt auf allen Seiten, die das Feld tragen
 access = ["fulltext", "abstract", "citation"]
@@ -108,14 +112,14 @@ access = ["fulltext", "abstract", "citation"]
 [lint]
 orphans = "inbound"             # inbound | isolated
 fulltext_access = ["fulltext"]  # access-Werte, die raw_packet oder fulltext verlangen
-claims_section = "Kernaussagen" # Abschnitt, der bei access: citation leer bleiben muss
+claims_section = "Kernaussagen" # Abschnitt, in dem bei access: citation kein Listenpunkt (-, *, 1.) stehen darf; Fließtext wird nicht gemeldet
 priority_field = ""             # z. B. "core": warnt, wenn solche Quellen nur citation haben
 
 [lint.severity]                 # Code = "error" | "warn" | "info" | "off"
 path_not_kebab = "error"
 
 [export.csl]
-path = "quellen/references.json"   # CSL-JSON aller Quellenkarten (id = Slug)
+path = "quellen/references.json"   # CSL-JSON aller Quellenkarten mit `csl`-Block (id = Slug)
 field = "csl"                   # Frontmatter-Feld mit dem CSL-Eintrag
 style = "quellen/apa.csl"       # Zitierstil für pandoc (APA-Block in neuen Karten, Literaturverzeichnis)
 lang = "de-DE"
@@ -141,8 +145,8 @@ derive = true                   # Quellen ohne Wert, die nur verborgene Seiten n
 field = "fundweg"               # Feld für den Fundweg der Quellen
 
 [sources]                       # new source --doi/--pmid/--arxiv/--manuell
-checked_field = "metadaten_geprueft"   # Metadatenabgleich {by: process:crossref, at} – nicht verified
-updates_field = "crossref_hinweise"    # Crossref updated-by (Rückzug, Korrektur), erscheint auch im Text
+checked_field = "metadaten_geprueft"   # Metadatenabgleich {by: process:<dienst>, at} – nicht verified
+updates_field = "crossref_hinweise"    # Crossref updated-by (Rückzug, Korrektur); im Text nur über {{hinweise}} in einer eigenen Vorlage
 manual_csl_type = "document"    # CSL-Typ bei --manuell ohne --csl-typ (z. B. legislation für Gesetze)
 
 [trust]                         # Freigabe (siehe „Freigabe über Claude“)
@@ -151,7 +155,7 @@ signed_human = false            # true: Lint human_unsigned prüft die Commit-Si
 human = "human:jdoe"            # Kennung, die „Zur Freigabe“ im Dashboard vorbelegt (sonst die häufigste im Wiki)
 check_command = "/pruefen"      # Aufruf der Gegenprüfung für „Gegenprüfung ohne Prüfwert“ (sonst ein Hinweis an Claude)
 
-[licenses.patterns]             # weitere Muster (regulärer Ausdruck auf Name oder URL) = Lizenzklasse
+[licenses.patterns]             # weitere Muster (regulärer Ausdruck, gesucht in Name und URL in Kleinbuchstaben) = Lizenzklasse
 "example\\.org" = "vorbehalten"
 
 [rights.vorbehalten]            # Rechtematrix je Klasse überschreiben: "ja", "bedingt: …", "nein: …", "fragen: …"
@@ -160,7 +164,7 @@ ki_auswertung = "fragen: Verlag erlaubt kein Text-und-Data-Mining"
 [dashboard]
 path = "build/wiki-dashboard.html"   # Ziel von okfw.py dashboard; der Guard schützt die Datei
 auto = false                    # true: rebuild (also auch der Stop-Hook) schreibt das Dashboard mit (nie öffentlich)
-public_path = ""                # Ziel von dashboard --oeffentlich ("": <path>-oeffentlich.html daneben)
+public_path = ""                # Ziel von dashboard --oeffentlich ("": <path> mit Zusatz -oeffentlich vor der Endung, also build/wiki-dashboard-oeffentlich.html)
 glossary = ["concept", "entity"]  # Typen, deren Seiten ins Glossar des Dashboards kommen ([] = kein Glossar)
 
 # Je Typ ein Block. Reihenfolge = Reihenfolge der Bereiche im Root-Index.
@@ -172,7 +176,7 @@ required = ["title", "description", "resource", "access", "status", "generated"]
 recommended = ["license"]       # Warnung ([title, description])
 sections = ["Kurzreferat", "Kernaussagen", "Relevanz", "Verbindungen", "Zugang"]  # H2, Präfixvergleich
 min_links = 0                   # ausgehende interne Links im Text (2, bei source 0)
-needs_footnotes = false         # Seite braucht mindestens eine Fußnote [^id]
+needs_footnotes = false         # Seite braucht mindestens eine Fußnote [^id] (nicht bei status: deprecated)
 stale_months = 0                # new setzt stale_after = heute + N Monate
 template = ""                   # eigene Vorlage, gesucht neben der wiki.toml, dann im Skill unter profiles/ und templates/;
                                 # Platzhalter {{title}}, {{description}}, {{apa}}, {{kurzbeleg}}, {{access}}, {{footnotes}},
@@ -197,8 +201,7 @@ Quellenkarten (`type: source`) zusätzlich, wenn vorhanden: `access`; `raw_packe
 Paket mit `manifest.json`) oder `fulltext` als Zuordnung oder Liste mit `path` und `sha256`
 (empfohlen außerdem `retrieved_at`, `retrieved_from`; ältere Schlüssel `abgerufen`, `von`,
 `fetched_from` bleiben gültig); `license {name, url, checked, via, class}` (Pflicht im Sinn von
-`license_missing`, `unknown` ist ein gültiger Name; `class` legt die Lizenzklasse fest, wenn kein Muster
-passt); `rights {aktion: "wert: Hinweis"}` für Abweichungen von der Klasse, etwa eine erteilte
+`license_missing`, `unknown` ist ein gültiger Name; `class` legt die Lizenzklasse fest und geht jedem Muster vor); `rights {aktion: "wert: Hinweis"}` für Abweichungen von der Klasse, etwa eine erteilte
 Genehmigung; `csl` als CSL-JSON ohne `id`; `fundweg` als Zuordnung oder Liste
 `{art, db, query, von, at, by}` mit `art` ∈ `suche` | `modellvorschlag` | `material` | `person` |
 `zitatverfolgung` (dann `von: <slug>` Pflicht). `db` nennt Datenbank oder Werkzeug (`pubmed`,
@@ -218,7 +221,9 @@ wird nur in Lint, Status und Dashboard, nichts wird geschrieben; ein Wert auf de
 
 Mit `[visibility]` darf jede Seite das Sichtbarkeitsfeld tragen (z. B. `sichtbarkeit: intern`); ohne
 Feld gilt `default`. Seiten mit einem Wert aus `hidden` fehlen in der öffentlichen Ausgabe ganz,
-ebenso Seiten mit einem unbekannten Wert (ein Tippfehler soll nichts veröffentlichen). Quellen ohne
+ebenso Seiten mit einem unbekannten Wert (ein Tippfehler soll nichts veröffentlichen). Unbekannt heißt: nicht in
+`[enums]` für das Feld, ohne solchen Eintrag nicht `default` oder `hidden`; ohne `[enums]`-Eintrag und ohne `default`
+prüft der Kern keine Werte. Quellen ohne
 eigenen Wert, die nur von verborgenen Seiten verlinkt oder in `sources[]` geführt werden, gelten als
 verborgen (`derive`); auch das wird nur abgeleitet, nicht geschrieben. `[scope]` bleibt davon
 unberührt: Der Umfang blendet im Dashboard nur ein und aus, die Sichtbarkeit lässt Seiten weg.
@@ -253,10 +258,10 @@ Eine JSON-Zeile je Ereignis, nur anhängen:
 ```
 
 `page` ist die Konzept-ID (Pfad im Bundle ohne `.md`), `raw/<slug>` für Rohquellen, `.` für das ganze
-Bundle. Arten: `init`, `capture`, `create`, `update`, `verify`, `deprecate`, `delete`, `merge`, `note`;
+Bundle. Arten: `init`, `bootstrap`, `capture`, `create`, `update`, `verify`, `deprecate`, `delete`, `merge`, `enrich`, `export`, `note`, dazu die Hook-Formen `write` und `edit`;
 der PostToolUse-Hook schreibt nach einem Edit oder Write, der den Körper geändert hat, über `body --nachziehen`
-ein `update` mit dem Akteur aus `[wiki] actor`, sonst `write`/`edit` mit `by: process:claude-code-hook`; im Log daraus
-„Erstellt“ (erstes Ereignis einer Seite) bzw. „Aktualisiert“. Ältere Formen werden gelesen, nie
+ein `update` mit dem Akteur aus `[wiki] actor`, sonst `write`/`edit` mit `by: process:claude-code-hook`; im Log werden nur
+`write`/`edit` zu „Erstellt“ (erstes Ereignis einer Seite) bzw. „Aktualisiert“, ein `update` steht immer als „Aktualisiert“. Ältere Formen werden gelesen, nie
 umgeschrieben: `creation`, fehlendes `by`, `page` als bloßer Slug (wird über den Dateinamen aufgelöst).
 
 ## Lint-Codes und Standardschwere
@@ -272,20 +277,25 @@ ableiten lässt); ungültige Werte meldet `enum_invalid`, auch für das Sichtbar
 `visibility_leak` = öffentliche Seite verlinkt eine verborgene oder führt sie in `sources[]`; in der
 öffentlichen Ausgabe wird der Link zu reinem Text, Beleg, Fußnote und Literaturangabe entfallen, der
 übrige Satz bleibt stehen. `fundweg_missing` = Quelle ohne Fundweg
-(Standard info, im Profil auch warn, mit `--strict` dann Fehler); `fundweg_incomplete` = Suche ohne
+(Standard info, im Profil auch warn; `--strict` lässt `lint` bei Warnungen mit Exit 1 enden, der Befund bleibt `warn`, bei `info` wirkt `--strict` nicht); `fundweg_incomplete` = Suche ohne
 `db` oder `query`; `fundweg_invalid` = unbekannte Art, Zitatverfolgung ohne `von` oder `von` ohne
-Quellenkarte.
+Quellenkarte; ein ungültiges `fundweg.at` meldet `timestamp_invalid`, ein ungültiges `by` `actor_format`.
 
-Lizenzbefunde: `license_missing` = Quellenkarte ohne `license.name`; `license_unknown` = Name
-`unknown`; `license_unclassified` = Name ohne passendes Muster (`license.class` setzen);
+Lizenzbefunde: `license_missing` = Quellenkarte mit weder `license.name` noch `license.url`; `license_unknown` = Name
+`unknown` oder gleichwertig (unbekannt, unklar, n/a, none, keine Angabe, nur Striche; Groß/klein egal); `license_unclassified` = Name ohne passendes Muster (`license.class` setzen);
 `fulltext_rights` = Volltext abgelegt (Rohquellen-Paket oder `fulltext`), obwohl das Recht dazu
 ungeklärt ist; `fulltext_shared` = Volltext von Git versioniert, obwohl die Lizenz keine Weitergabe
-erlaubt (Git-Status über `git ls-files`).
+erlaubt (Git-Status über `git ls-files`). Fehlt das Feld `license` ganz, meldet das Profil es zusätzlich als
+`missing_recommended` (default) bzw. `missing_required` (dokumentation). Zum Volltext selbst: `fulltext_unanchored` =
+`access` verlangt einen Volltext (`[lint] fulltext_access`), aber weder `raw_packet` noch `fulltext`-Block, oder ein
+`fulltext`-Eintrag ohne `path` oder `sha256`; `fulltext_absent` = die Datei aus `fulltext.path` liegt lokal nicht
+vor (Prüfsumme ungeprüft); `fulltext_tampered` = sie weicht vom gespeicherten `sha256` ab.
 
 Vertrauen: `stable_unverified` = `status: stable` ohne `verified`-Eintrag eines Menschen (`human:<id>`);
 ein Vermerk durch Claude oder einen Prozess reicht dafür nicht. `verified_outdated` = die letzte Freigabe
 durch `human:<id>` gilt nicht mehr dem jetzigen Inhalt: ihr Prüfwert passt nicht mehr, oder sie hat keinen
-(Eintrag aus der Zeit vor dem Prüfwert, nicht vergleichbar) und `generated.at` ist jünger als ihr `at`.
+(Eintrag aus der Zeit vor dem Prüfwert, nicht vergleichbar) und `generated.at` ist jünger als ihr `at`, oder eine spätere
+Prüfung mit Prüfwert galt einem anderen Inhalt.
 Warnung, bei `status: stable` Fehler (eigene Schwere in `[lint.severity]` gilt für beides). Mit Prüfwert
 entscheidet nur er: `lizenz`, `fundweg` und `sources` ziehen `generated` nach, ändern aber den geprüften Text
 nicht und lassen die Freigabe stehen. `human_without_check` = eine stable-Seite ist durch `human:<id>` freigegeben,
@@ -303,8 +313,9 @@ Freigabe strenger an den Inhalt.
 Datum: `source_undated` = Quellenkarte ohne `csl`-Block, aus deren Feldern sich kein Datum ergibt
 (`date`, `created`, `published`, `year`); im APA-Beleg stünde „o. J.“. Für Repo-Dateien und Webseiten
 das Commit-, Veröffentlichungs- oder Stand-Datum setzen. Ist eine Quelle wirklich undatiert, das bewusst
-mit `date: o. J.` (auch `n. d.`, `undatiert`) vermerken; dann entfällt die Warnung. Fehlt `issued` in
-einem `csl`-Block, meldet das schon `csl_incomplete`.
+mit `date: o. J.` (auch `n. d.`, `undatiert`) vermerken; dann entfällt die Warnung. `csl_incomplete` meldet
+einen `csl`-Block ohne Titel, ohne `issued` oder ohne Autorschaft (`author` oder `editor`) und einen Block ohne `DOI`
+und ohne `accessed`; ein fehlendes `issued` fällt also schon dort auf.
 
 ## Freigabe über Claude
 
@@ -323,7 +334,7 @@ Körper danach, verfällt die Freigabe: `body` setzt eine stable-Seite auf `draf
 (human-reviewed, machine-confirmed, unverified) zählen nur Vermerke, die zum jetzigen Inhalt passen; Seiten mit
 Vermerken, von denen keiner mehr passt, stehen getrennt als „n verfallen“, dazu „n zur Freigabe“. Ohne frische Gegenprüfung lehnt
 `verify --status stable` ab (`--force` schreibt trotzdem und vermerkt das im Ereignis; Lint
-`human_without_check`). `status` und `verified` ändert nur `verify`: Der Guard blockiert Edit und Write, die
+`human_without_check`). `status` und `verified` ändert nur `verify` und `body` (auch `--nachziehen`), das eine stable-Seite auf draft setzt: Der Guard blockiert Edit und Write, die
 diese Schlüssel einer Wiki-Seite ändern; eine neue Seite darf `status: draft` tragen.
 
 Ablauf einer Charge:
@@ -352,7 +363,9 @@ git commit -S -m "Charge 3 freigegeben"    # oder dauerhaft: git config --global
 ## Lizenzen und Nutzungsrechte
 
 Jede Quellenkarte trägt eine Lizenz. Der Kern ordnet sie über Name und URL einer Klasse zu; passen
-mehrere Muster (Mischangaben wie „Metadaten gemeinfrei; Abstracts geschützt“), gilt die strengste.
+mehrere Muster (Mischangaben wie „Metadaten gemeinfrei; Abstracts geschützt“), gilt die strengste. Ein
+`license.class` auf der Karte geht jedem Muster vor. Gültige Klassen: `frei`, `by`, `sa`, `nd`, `nc`, `nc-nd`,
+`vorbehalten`, `unbekannt`; andere Werte werden ignoriert.
 Je Klasse legt eine Matrix fest, was die Person mit der Quelle tun darf. Werte: **erlaubt**, **mit
 Auflage** (Hinweis sagt welche), **nicht erlaubt**, **erst fragen**. Die Matrix ist eine Arbeitshilfe,
 keine Rechtsberatung; im Zweifel gilt „erst fragen“.
@@ -617,7 +630,9 @@ Der Guard sucht die `wiki.toml` aufwärts ab der Zieldatei (rund 30 ms, nur Stan
 Python ≥ 3.11 wegen `tomllib`, das uv bereitstellt). Er schützt dieselben Pfade, die `status --hook` als
 „Nicht direkt bearbeiten“ nennt (`protected_paths` im Kern). Für die Vertrauensfelder vergleicht er die
 Schlüssel `status` und `verified` im Frontmatter vor und nach der Änderung als Text (Edit und MultiEdit
-werden auf die Datei angewandt, Write bringt den ganzen Inhalt); jede Abweichung wird abgelehnt.
+werden auf die Datei angewandt, Write bringt den ganzen Inhalt); jede Abweichung wird abgelehnt, nur eine neue Seite darf `status: draft` tragen.
 Schreibzugriffe über Bash erfasst er nicht, auch `okfw.py verify` nicht; das bleibt Regel, und dafür gibt es
-die Signatur. Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`,
-Zeitüberschreitung) melden die Hooks als eine Zeile (`systemMessage`); ohne `wiki.toml` bleiben sie still.
+die Signatur. Bedienfehler (kaputte `wiki.toml`, `requires_core` neuer als der Kern, fehlendes `uv`, dies außer beim
+Guard) melden die Hooks als eine Zeile (`systemMessage`), eine Zeitüberschreitung meldet nur das Plugin (`hooks.json` über
+`okf_hook.py`); die Vorlage `settings.example.json` ruft für SessionStart und Stop den Kern direkt auf. Ohne `wiki.toml`
+bleiben sie still.

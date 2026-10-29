@@ -101,3 +101,63 @@ class ProfilDokumentation(WikiTest):
         self.core("new", "source", "falsch", "--title", "F", "--description", "D", "--access", "citation",
                   "--set", "format=video")
         self.assertIn("enum_invalid", self.lint_codes("sources/falsch"))
+
+
+class SelbstreviewNullDreiNull(WikiTest):
+    """Befunde aus dem Selbstreview 0.3.0 (tests/selbstreview-2026-10-29-0.3.0.md), im Code behoben."""
+
+    def toml_dazu(self, text: str) -> None:
+        toml = self.root / "wiki.toml"
+        toml.write_text(toml.read_text(encoding="utf-8") + text, encoding="utf-8")
+
+    def test_rebuild_quiet_meldet_kaputte_wiki_toml(self):
+        self.toml_dazu("\n[wiki\n")
+        done = self.core("rebuild", "--quiet", ok=False)
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("nicht lesbar", done.stderr)
+
+    def test_falsche_schwere_bricht_mit_meldung_ab(self):
+        toml = self.root / "wiki.toml"
+        toml.write_text(toml.read_text(encoding="utf-8").replace("[lint.severity]", '[lint.severity]\norphan = "warning"'),
+                        encoding="utf-8")
+        done = self.core("lint", "--summary", ok=False)
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("orphan = 'warning'", done.stderr)
+
+    def test_requires_core_ohne_zahl_ist_bedienfehler(self):
+        toml = self.root / "wiki.toml"
+        text = toml.read_text(encoding="utf-8")
+        toml.write_text(text.replace('requires_core = "0.1"', 'requires_core = "v0.3"'), encoding="utf-8")
+        done = self.core("status", ok=False)
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("MAJOR.MINOR", done.stderr)
+        self.assertNotIn("Traceback", done.stderr)
+
+    def test_literaturverzeichnis_ohne_csl_nennt_den_grund(self):
+        self.toml_dazu('\n[export.bibliography]\npath = "build/literatur.md"\n')
+        out = json.loads(self.core("lint", "--json", ok=None).stdout)
+        msgs = [f["message"] for f in out["findings"] if f["code"] == "projection_unavailable"]
+        self.assertEqual(len(msgs), 1)
+        # vorher hieß es mit pandoc und ohne Quellen „pandoc fehlt?“
+        self.assertIn("pandoc fehlt" if shutil.which("pandoc") is None else "keine Quellenkarte mit csl-Block", msgs[0])
+
+    def test_date_zaehlt_auch_mit_authors(self):
+        self.core("new", "source", "q1", "--title", "Q1", "--description", "D", "--access", "citation",
+                  "--resource", "https://example.org/q1", "--set", "authors=[Muster, M.]",
+                  "--set", "date=2026-10-25", "--set", "license={name: MIT, url: null}")
+        self.assertNotIn("source_undated", self.lint_codes("sources/q1"))
+        self.core("new", "source", "q2", "--title", "Q2", "--description", "D", "--access", "citation",
+                  "--resource", "https://example.org/q2", "--set", "authors=[Muster, M.]")
+        self.assertIn("source_undated", self.lint_codes("sources/q2"))
+
+    def test_lizenz_class_ohne_namen(self):
+        self.quelle("q1")
+        toml_text = self.text("sources/q1").replace("license: {name: unknown, url: null}\n", "")
+        (self.root / "wiki" / "sources" / "q1.md").write_text(toml_text, encoding="utf-8")
+        done = self.core("lizenz", "sources/q1", "--class", "by")
+        self.assertIn("ohne Namen", done.stdout)
+
+    def test_zitatverfolgung_nennt_die_option_von_new(self):
+        done = self.core("new", "source", "q3", "--title", "Q3", "--description", "D", "--access", "citation",
+                         "--fundweg", "zitatverfolgung", ok=False)
+        self.assertIn("--fundweg-von", done.stderr)

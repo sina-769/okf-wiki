@@ -80,7 +80,7 @@ Im Projektordner (Pfad zum Kern aus der Plugin-Installation):
 OKF=$(ls -d ~/.claude/plugins/cache/okfw/okfw/*/skills/okfw | tail -1)/okfw.py
 uv run --quiet "$OKF" init --profile default        # wiki.toml und wiki/ anlegen
 uv run --quiet "$OKF" capture <slug> --url URL --file PFAD --license NAME --license-url URL
-uv run --quiet "$OKF" new source <slug> --title … --description … --access fulltext --set raw_packet=raw/<slug>
+uv run --quiet "$OKF" new source <slug> --title … --description … --resource <url> --access fulltext --set raw_packet=raw/<slug>
                                                     # übernimmt die Lizenz aus dem Manifest
 uv run --quiet "$OKF" new concept <slug> --title … --description … --sources <quelle>
 uv run --quiet "$OKF" body concepts/<slug> text.md  # Inhalt setzen, Fußnoten [^<quelle>]
@@ -103,11 +103,32 @@ Oder in Claude Code einfach um Wiki-Arbeit bitten; der Skill kennt die Befehle. 
 
 Jeder Prüfvermerk von `verify` trägt einen Prüfwert des Seitentexts, und ändert sich der Text danach,
 verfällt der Vermerk. `status: stable` setzt nur ein Mensch mit `verify <seite>… --by human:<id> --status stable`,
-und nur, wenn Claude oder ein Prozess denselben Text vorher gegengeprüft hat. Im Dashboard listet
+und nur, wenn Claude oder ein Prozess denselben Text vorher gegengeprüft hat; `--force` gibt auch ohne Gegenprüfung frei und vermerkt das im Ereignis. Im Dashboard listet
 „Zur Freigabe“ diese Seiten mit ihrem ganzen Text und baut den `verify`-Aufruf für eine ganze Charge zum
 Kopieren. Wird eine freigegebene Seite danach mit `body`, Edit oder Write geändert, fällt sie auf `draft`
 zurück, und Lint meldet `verified_outdated`. Ablauf, Lint-Regeln und Commit-Signatur:
 [„Freigabe über Claude“ in konfiguration.md](skills/okfw/docs/konfiguration.md#freigabe-über-claude).
+
+## Release-Schritte
+
+Tests bei jeder Änderung, Selbstreview mit Modell vor jedem Release. Die Tests laufen bei jedem Pull Request
+auf GitHub ([.github/workflows/tests.yml](.github/workflows/tests.yml)); dazu gehört `tests/test_abdeckung.py`, der
+mechanische Teil des Selbstreviews: Jeder Befehl, jede Lint-Regel, jeder Schlüssel der `wiki.toml` und jeder Hook
+steht in der Doku und wird von einem Test berührt, und was die Doku nennt, gibt es im Code. Vor jeder Version, in
+dieser Reihenfolge:
+
+1. **Tests:** `uv run python -m unittest` im Plugin-Ordner, alle grün ([Tests](#tests)).
+2. **Selbstreview:** `uv run --script tests/selbstreview.py` legt unter `.nachbau/` ein Wegwerf-Wiki über
+   okfw selbst an und listet, was im Code, aber in keiner Doku steht, was die Doku nennt, aber der Code nicht
+   kennt, und was kein Test abdeckt. Danach Karten lesen, Widersprüche vermerken, gegenprüfen, Bericht nach
+   `tests/selbstreview-<datum>-<version>.md`; Ablauf in [tests/selbstreview.md](tests/selbstreview.md).
+   Eindeutige Befunde vor dem Release beheben.
+3. **Nachbau:** frische Installation im Container ([Nachbau-Test](#nachbau-test)), Protokoll nach
+   `tests/protokoll-<datum>-<version>.md`.
+4. **Export:** Version in `.claude-plugin/plugin.json` und `.claude-plugin/marketplace.json` setzen, `CHANGELOG.md`
+   abschließen, dann den Plugin-Ordner ins öffentliche Repository übernehmen.
+
+Letzter Selbstreview: [tests/selbstreview-2026-10-29-0.3.0.md](tests/selbstreview-2026-10-29-0.3.0.md).
 
 ## Tests
 
@@ -135,8 +156,9 @@ docker run --rm -v "$PWD:/src:ro" -v "$PWD/.nachbau:/out" okfw-nachbau /src /out
 Mit `-e CLAUDE_CODE_OAUTH_TOKEN` (Token aus `claude setup-token`) läuft zusätzlich eine echte
 Claude-Sitzung, die an den Schreibschutz stößt.
 
-Letztes Protokoll: [tests/protokoll-2026-10-28-0.3.0.md](tests/protokoll-2026-10-28-0.3.0.md) (okfw 0.3.0,
-33 von 33 Pflichtschritten, der Schritt mit `claude -p` ohne Token übersprungen); davor
+Letztes Protokoll: [tests/protokoll-2026-10-29-0.4.0.md](tests/protokoll-2026-10-29-0.4.0.md) (okfw 0.4.0,
+34 von 34 mit `claude -p`); davor [tests/protokoll-2026-10-28-0.3.0.md](tests/protokoll-2026-10-28-0.3.0.md)
+(0.3.0, 33 von 33 Pflichtschritten, `claude -p` ohne Token übersprungen),
 [tests/protokoll-2026-10-28.md](tests/protokoll-2026-10-28.md) (0.2.0, 32 von 32 mit `claude -p`) und
 [tests/protokoll-2026-10-25.md](tests/protokoll-2026-10-25.md) (0.1.0).
 

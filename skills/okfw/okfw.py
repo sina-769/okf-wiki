@@ -64,7 +64,7 @@ from pathlib import Path
 
 import yaml
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 SKILL_DIR = Path(__file__).resolve().parent
 RESERVED = {"index.md", "log.md"}
 STATUS = ("draft", "stable", "deprecated")
@@ -666,8 +666,15 @@ class Wiki:
         self.public = False               # public_view(): öffentliche Ausgabe ohne verborgene Seiten
         self.withheld: set[Path] = set()  # public_view(): Pfade der weggelassenen Seiten
         required = cfg["wiki"].get("requires_core")
-        if required and tuple(map(int, VERSION.split(".")[:2])) < tuple(map(int, str(required).split(".")[:2])):
-            raise WikiError(f"wiki.toml verlangt okfw {required}, installiert ist {VERSION}")
+        if required:
+            if not re.fullmatch(r"\d+\.\d+(\.\d+)?", str(required)):
+                raise WikiError(f"[wiki] requires_core {required!r} ist keine Version MAJOR.MINOR, z. B. \"0.3\"")
+            if tuple(map(int, VERSION.split(".")[:2])) < tuple(map(int, str(required).split(".")[:2])):
+                raise WikiError(f"wiki.toml verlangt okfw {required}, installiert ist {VERSION}")
+        wrong = {c: v for c, v in cfg["lint"]["severity"].items() if v not in (*SEVERITY_ORDER, "off")}
+        if wrong:
+            raise WikiError("[lint.severity] erlaubt error, warn, info oder off: "
+                            + ", ".join(f"{c} = {v!r}" for c, v in wrong.items()))
 
     @classmethod
     def load(cls, config: str | Path | None = None, root: str | Path | None = None,
@@ -1481,7 +1488,8 @@ class Wiki:
                 add("projection_stale", path, "veraltet – `okfw.py rebuild` ausführen")
         bib = self.cfg["export"].get("bibliography", {})
         if bib.get("path") and self.root / bib["path"] not in projections:
-            add("projection_unavailable", self.root / bib["path"], "Literaturverzeichnis nicht erzeugbar (pandoc fehlt?)")
+            why = "pandoc fehlt" if not shutil.which("pandoc") else "keine Quellenkarte mit csl-Block"
+            add("projection_unavailable", self.root / bib["path"], f"Literaturverzeichnis nicht erzeugbar: {why}")
 
     def _lint_page(self, p: Page, add, by_path, inbound, edges) -> None:
         fm, path = p.fm, p.path
@@ -1835,7 +1843,8 @@ class Wiki:
         if art not in FUNDWEG_ARTEN:
             raise WikiError(f"Fundweg-Art {art!r}: eine von {', '.join(FUNDWEG_ARTEN)}")
         if art == "zitatverfolgung" and not von:
-            raise WikiError("zitatverfolgung braucht --von <slug> (die Quelle, deren Literatur verfolgt wurde)")
+            raise WikiError("zitatverfolgung braucht die Quelle, deren Literatur verfolgt wurde: "
+                            "new … --fundweg-von <slug> bzw. fundweg … --von <slug>")
         if at and not is_timestamp(at):
             raise WikiError("--at muss ein ISO-8601-Zeitpunkt mit Offset sein, z. B. 2026-10-25T09:30:00Z")
         if by and not ACTOR_RE.match(by):
@@ -2179,8 +2188,9 @@ class Wiki:
                                 ("issue", "issue"), ("pages", "page")):
                 if fm.get(key) and target not in item:
                     item[target] = str(fm[key])
-            if csl_date(fm.get("year")):
-                item["issued"] = csl_date(fm.get("year"))
+            issued = csl_date(fm.get("year") or fm.get("date") or fm.get("created") or fm.get("published"))
+            if issued:
+                item["issued"] = issued
             if fm.get("doi"):
                 item["DOI"] = str(fm["doi"])
             elif url:
@@ -3170,7 +3180,7 @@ def cmd_lizenz(wiki: Wiki, args) -> int:
             print(f"{page.id}: {lic}")
         else:
             wiki.set_license(page.id, lic)
-            print(f"{page.id}: {lic['name']} → {LICENSE_CLASSES[classify_license(lic, wiki.cfg['licenses'].get('patterns'))[0]]}")
+            print(f"{page.id}: {lic.get('name') or 'ohne Namen'} → {LICENSE_CLASSES[classify_license(lic, wiki.cfg['licenses'].get('patterns'))[0]]}")
         return 0
     found = 0
     for i, page in enumerate(targets):
@@ -3389,7 +3399,7 @@ def main(argv=None) -> int:
         wiki = Wiki.load(config=args.config, root=args.root)
         return args.func(wiki, args)
     except WikiError as exc:
-        if quiet or hook and isinstance(exc, ConfigMissing):
+        if (quiet or hook) and isinstance(exc, ConfigMissing):
             return 0   # Hooks in Ordnern ohne Wiki bleiben still
         if hook:
             # Bedienfehler (requires_core, kaputte wiki.toml …) als eine Zeile statt still; Exit 0 blockiert nichts

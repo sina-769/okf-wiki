@@ -54,7 +54,7 @@ Ohne `wiki.toml` nichts schreiben; neues Wiki mit `init --profile default`.
 |---|---|---|
 | Rohquellen | `[paths] raw` (Pakete mit `manifest.json`) oder lokale Dateien mit `fulltext {path, sha256}` | nur `capture`; danach unveränderlich |
 | Bundle | `[wiki] bundle`, Unterordner je Typ | Claude, Seite für Seite |
-| Ereignisse | `[paths] events`, Standard `<bundle>/.events.jsonl` | nur anhängen: `event`, `verify`, `new`, `capture`, Hook |
+| Ereignisse | `[paths] events`, Standard `<bundle>/.events.jsonl` | nur anhängen: `event`, jeder Befehl, der Seiten oder Rohquellen schreibt (`rebuild` nicht), Hook |
 | Projektionen | jedes `index.md`, `log.md`, Exporte aus `[export]` | nur `rebuild` |
 
 ## Goldene Regeln
@@ -66,7 +66,7 @@ Ohne `wiki.toml` nichts schreiben; neues Wiki mit `init --profile default`.
 5. **`access` ehrlich halten.** `citation` = nur Metadaten; Inhalt bleibt `> [!todo]`, keine Belege für Aussagen. `abstract` = Aussagen als abstract-basiert kennzeichnen („(Abstract)“). `fulltext` und gleichrangige Profilwerte (`[lint] fulltext_access`, z. B. `originaldokument`) = Kernaussagen mit Fundstelle (S., Tab., Abschn., Art., Abs., Zeile).
 6. **Nichts erfinden.** Lücken bleiben `> [!todo]`. Keine Stub-Seiten für fehlende Links anlegen.
 7. **Widersprüche auf beiden Seiten** markieren: `> ⚠️ **Widerspruch:** A sagt X, B sagt Y.`
-8. **Vertrauen nach OKF.** `generated: {by, at}` bei jeder inhaltlichen Änderung nachziehen: `body`, `sources`, `lizenz` und `fundweg` tun das selbst, nach Edit oder Write am Körper der PostToolUse-Hook (`body --nachziehen`); dennoch Inhalte bevorzugt mit `body` schreiben und fehlende Quellen mit `sources <seite> --add …` nachtragen statt mit Edit. `verified` nur für eine inhaltliche Prüfung am Original, über `verify`: `human:<id>` nur, wenn ein Mensch geprüft hat; eine Volltextprüfung durch Claude trägt den Akteur aus `[wiki] actor`. Ein Metadatenabgleich (Crossref, PubMed) ist keine inhaltliche Prüfung und gehört in ein eigenes Feld (z. B. `metadaten_geprueft`), nicht in `verified`. `status: stable` erst mit `verified` durch `human:<id>`; ein `verify`-Vermerk durch Claude (Akteur aus `[wiki] actor`) hält die Prüfung fest, hebt den Status aber nicht; `verify --status stable` lehnt andere Akteure ab. Jeder Vermerk trägt den Prüfwert des Inhalts: Ändert er sich danach, verfällt die Freigabe (`body` setzt stable auf draft, Lint `verified_outdated`), und `status` und `verified` ändert nur `verify`, nie Edit oder Write (der Guard blockiert das). Eine Freigabe durch `human:<id>` setzt eine Gegenprüfung durch Claude oder einen Prozess zum selben Inhalt voraus; eine Charge gibt der Mensch über „Zur Freigabe“ im Dashboard mit einem `verify`-Aufruf für alle Seiten frei.
+8. **Vertrauen nach OKF.** `generated: {by, at}` bei jeder inhaltlichen Änderung nachziehen: `body`, `sources`, `lizenz` und `fundweg` tun das selbst, nach Edit oder Write am Körper der PostToolUse-Hook (`body --nachziehen`); dennoch Inhalte bevorzugt mit `body` schreiben und fehlende Quellen mit `sources <seite> --add …` nachtragen statt mit Edit. `verified` nur für eine inhaltliche Prüfung am Original, über `verify`: `human:<id>` nur, wenn ein Mensch geprüft hat; eine Volltextprüfung durch Claude trägt den Akteur aus `[wiki] actor`. Ein Metadatenabgleich (Crossref, PubMed) ist keine inhaltliche Prüfung und gehört in ein eigenes Feld (z. B. `metadaten_geprueft`), nicht in `verified`. `status: stable` erst mit `verified` durch `human:<id>`; ein `verify`-Vermerk durch Claude (Akteur aus `[wiki] actor`) hält die Prüfung fest, hebt den Status aber nicht; `verify --status stable` lehnt andere Akteure ab. Jeder Vermerk trägt den Prüfwert des Inhalts: Ändert er sich danach, verfällt die Freigabe (`body` setzt stable auf draft, Lint `verified_outdated`), und `status` und `verified` ändert nur `verify` und `body` (auch `--nachziehen`), das eine stable-Seite auf draft setzt, nie Edit oder Write (der Guard blockiert das). Eine Freigabe durch `human:<id>` setzt eine Gegenprüfung durch Claude oder einen Prozess zum selben Inhalt voraus; eine Charge gibt der Mensch über „Zur Freigabe“ im Dashboard mit einem `verify`-Aufruf für alle Seiten frei.
 9. **Frische.** Momentaufnahmen, Praxisbeschreibungen, Entwürfe, lebende Dokumente und Rechtsstände bekommen `stale_after` (Profil: `stale_months`).
 10. **Unbekannte Felder erhalten.** Frontmatter nicht neu serialisieren; gezielt editieren.
 11. **Internes bleibt intern.** Was nicht nach außen darf (OPSEC: Kunden, Geschäftsideen, Pläne, Zahlen), trägt `sichtbarkeit: intern`, sobald die `wiki.toml` `[visibility]` hat. Den Schalter in einem Projekt nur nach ausdrücklicher Freigabe setzen. Öffentliche Seiten verlinken und belegen nicht auf interne. Weitergegeben wird nur `dashboard --oeffentlich`, nie die normale Ausgabe.
@@ -190,20 +190,21 @@ verweisen; Lint meldet das als `visibility_leak`. Nur die öffentliche Datei wei
 ## Lint lesen
 
 - **Fehler** brechen OKF oder das Profil: kaputtes Frontmatter, `sources`-Eintrag ohne `resource`, Fußnote ohne `sources`-Eintrag, Frontmatter in Ordner-`index.md`, manipulierte Rohquelle, Pflichtfeld fehlt.
-- **Warnungen** sind Pflegeaufgaben: Waisen, wenige Links, fehlende Abschnitte, `stable` ohne `verified` durch `human:<id>`, Aussagen auf `citation`-Quellen, veraltete Projektionen, Quellenkarten ohne Datum (`source_undated`, sonst „o. J.“ im Beleg; echt undatiert: `date: o. J.`). `visibility_leak` (öffentliche Seite verweist auf eine interne) vor jeder öffentlichen Ausgabe beheben.
+- **Warnungen** sind Pflegeaufgaben: Waisen, wenige Links, fehlende Abschnitte, `stable` ohne `verified` durch `human:<id>`, Aussagen auf `citation`-Quellen, veraltete Projektionen, Quellenkarten ohne Datum (`source_undated`, sonst „o. J.“ im Beleg; echt undatiert: `date: o. J.`), `verified_outdated` (Freigabe verfallen, auf stable-Seiten ein Fehler). `visibility_leak` (öffentliche Seite verweist auf eine interne) vor jeder öffentlichen Ausgabe beheben.
 - Befunde nicht durch Abschwächen der `wiki.toml` „lösen“, ohne nachzufragen.
 
 ## Hooks
 
-SessionStart-Status, Guard für Rohquellen/Ereignisse/Projektionen, Ereignisprotokoll, Rebuild beim Stop.
-Alle vier wirken nur in Projekten mit `wiki.toml`.
+SessionStart-Status, Guard für Rohquellen/Ereignisse/Projektionen und die Felder `status` und `verified`,
+Ereignisprotokoll, Rebuild beim Stop. Alle vier wirken nur in Projekten mit `wiki.toml`; SessionStart und Stop
+nur, wenn sie im Projektordner liegt (Guard und post-edit suchen aufwärts ab der Zieldatei).
 
 - **Als Plugin** (`claude plugin install okfw@okfw`): Die Hooks kommen mit dem Plugin
   (`hooks/hooks.json` im Plugin), im Projekt ist nichts einzutragen.
 - **Als Skill-Ordner** (`~/.claude/skills/okfw`): `hooks/settings.example.json` in die
   `.claude/settings.json` des Projekts übernehmen.
-- Bedienfehler (kaputte `wiki.toml`, zu altes `requires_core`, fehlendes `uv`) melden die Hooks als eine
-  Zeile; der Stop-Hook nennt dazu die Zahl der Lint-Fehler. Blockiert wird nichts außer Schreibzugriffen
+- Bedienfehler (kaputte `wiki.toml`, `requires_core` neuer als der Kern, fehlendes `uv`, dies außer beim Guard) melden die
+  Hooks als eine Zeile; der Stop-Hook nennt dazu die Zahl der Lint-Fehler. Blockiert wird nichts außer Schreibzugriffen
   auf geschützte Dateien.
 - Nicht beides zugleich, sonst laufen die Hooks doppelt und das Ereignisprotokoll schreibt jede
   Änderung zweimal.
